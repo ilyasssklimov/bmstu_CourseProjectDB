@@ -1,11 +1,14 @@
 import psycopg2 as ps
-from config import DB_PARAMS
+from config import DB_PARAMS, DB_TABLES_FILE, DB_CONSTRAINS_FILE
 
 
 class PostgresDB:
     def __init__(self):
         self.connection = None
+        self.cursor = None
         self.connect_db()
+        self.execute_file(DB_TABLES_FILE)
+        self.execute_file(DB_CONSTRAINS_FILE)
 
     def connect_db(self):
         self.connection = ps.connect(
@@ -15,16 +18,23 @@ class PostgresDB:
             host=DB_PARAMS['host'],
             port=DB_PARAMS['port']
         )
+        self.cursor = self.connection.cursor()
+
+    def close_db(self):
+        self.cursor.close()
+        self.connection.close()
 
     def execute(self, query):
-        cursor = self.connection.cursor()
-        cursor.execute(query)
+        self.cursor.execute(query)
         self.connection.commit()
 
     def select(self, query):
-        cursor = self.connection.cursor()
-        cursor.execute(query)
-        return cursor.fetchall()
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
+
+    def execute_file(self, filename):
+        with open(filename) as f:
+            self.execute(f.read())
 
     def add_user(self, full_name, sex, city, qualities, age, solvency):
         query = f'''     

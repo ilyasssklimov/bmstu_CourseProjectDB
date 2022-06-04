@@ -13,10 +13,13 @@ from states import RegisterStates
 
 bot = Bot(token=API_TOKEN)
 dispatcher = Dispatcher(bot, storage=MemoryStorage())
+
 try:
     database = PostgresDB()
 except ps.OperationalError:
     logging.error('Error! Unable to connect to database')
+    raise ValueError('Invalid params to connect to DB')
+
 guest_controller = GuestController(database)
 
 
@@ -60,12 +63,22 @@ async def register(callback_query: types.CallbackQuery, state: FSMContext):
                                    reply_markup=solvency_keyboard)
         case 'register_finish':
             async with state.proxy() as data:
-                try:
-                    full_name, sex, city, age = data['name'], data['sex'], data['city'], data['age']
-                except KeyError:
-                    await bot.send_message(callback_query.from_user.id, 'Обязательными полями для ввода являются: '
-                                                                        'Имя, Пол, Город, Возраст')
+                blank = []
+                if 'name' not in data:
+                    blank.append('Имя')
+                if 'sex' not in data:
+                    blank.append('Пол')
+                if 'city' not in data:
+                    blank.append('Город')
+                if 'age' not in data:
+                    blank.append('Возраст')
+
+                if blank:
+                    await bot.send_message(callback_query.from_user.id, 'Обязательными полями для ввода являются: ' +
+                                                                        ', '.join(blank))
+                    await register_form(callback_query.from_user.id)
                 else:
+                    full_name, sex, city, age = data['name'], data['sex'], data['city'], data['age']
                     try:
                         qualities, solvency = data['qualities'], data['solvency']
                     except KeyError:

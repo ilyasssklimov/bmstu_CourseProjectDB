@@ -1,3 +1,4 @@
+-- function that adds constraint if it doesn't exist
 CREATE OR REPLACE FUNCTION public.create_constraint (t_name text, c_name text, c_sql text)
 RETURNS VOID AS
 $$
@@ -12,6 +13,7 @@ $$
 LANGUAGE 'plpgsql';
 
 
+-- create constraints to public.tenant
 SELECT public.create_constraint (
     'tenant',
     'tenant_pkey',
@@ -27,7 +29,7 @@ SELECT public.create_constraint(
 SELECT public.create_constraint(
     'tenant',
     'tenant_sex_check',
-    'ALTER TABLE public.tenant ADD CONSTRAINT tenant_sex_check CHECK (sex IN (''M'', ''F''));'
+    'ALTER TABLE public.tenant ADD CONSTRAINT tenant_sex_check CHECK (sex IN (''M'', ''F'') AND sex IS NOT NULL);'
 );
 
 SELECT public.create_constraint(
@@ -39,5 +41,5 @@ SELECT public.create_constraint(
 SELECT public.create_constraint(
     'tenant',
     'tenant_age_check',
-    'ALTER TABLE public.tenant ADD CONSTRAINT tenant_age_check CHECK (age >= 14 AND age <= 100);'
+    'ALTER TABLE public.tenant ADD CONSTRAINT tenant_age_check CHECK (age >= 14 AND age <= 100 AND age IS NOT NULL);'
 );

@@ -1,6 +1,7 @@
-from config import LOG_FOLDER, LOG_NAME_FILE
 import logging
 import os
+
+from src.database.config import LOG_FOLDER, LOG_NAME_FILE
 
 
 def init_logger():

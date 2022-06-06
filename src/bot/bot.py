@@ -4,18 +4,18 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 
-from config import API_TOKEN
-from database import PostgresDB
-from controller.guest import GuestController
-from keyboard import register_keyboard, sex_keyboard, solvency_keyboard
-from states import RegisterStates
+from src.database.config import API_TOKEN, DB_PARAMS
+from src.database.database import PostgresDB
+from src.controller.guest import GuestController
+from src.bot.keyboard import register_tenant_keyboard, sex_keyboard, solvency_keyboard
+from src.bot.states import RegisterTenantStates
 
 
 bot = Bot(token=API_TOKEN)
 dispatcher = Dispatcher(bot, storage=MemoryStorage())
 
 try:
-    database = PostgresDB()
+    database = PostgresDB(DB_PARAMS)
 except ps.OperationalError:
     logging.error('Error! Unable to connect to database')
     raise ValueError('Invalid params to connect to DB')
@@ -24,7 +24,7 @@ guest_controller = GuestController(database)
 
 
 async def register_form(user_id: int):
-    await bot.send_message(user_id, 'Заполните данные о себе:', reply_markup=register_keyboard)
+    await bot.send_message(user_id, 'Заполните данные о себе:', reply_markup=register_tenant_keyboard)
 
 
 @dispatcher.message_handler(commands=['start'])
@@ -33,35 +33,39 @@ async def send_welcome(message: types.Message):
     await message.reply('Привет! Я помогу тебе найти соседей, выбери действие :)')
 
 
-@dispatcher.message_handler(commands=['register'])
+@dispatcher.message_handler(commands=['register_tenant'])
 async def send_register(message: types.Message):
-    await RegisterStates.START_STATE.set()
-    await register_form(message.from_user.id)
+    user_id = message.from_user.id
+    if guest_controller.check_tenant(user_id):
+        await bot.send_message(user_id, 'Вы уже зарегистрированы как арендатор')
+    else:
+        await RegisterTenantStates.START_STATE.set()
+        await register_form(user_id)
 
 
-@dispatcher.callback_query_handler(state=RegisterStates.START_STATE, text_contains='register')
-async def register(callback_query: types.CallbackQuery, state: FSMContext):
+@dispatcher.callback_query_handler(state=RegisterTenantStates.START_STATE, text_contains='register_tenant')
+async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext):
     match callback_query.data:
-        case 'register_name':
-            await RegisterStates.NAME_STATE.set()
+        case 'register_tenant_name':
+            await RegisterTenantStates.NAME_STATE.set()
             await bot.send_message(callback_query.from_user.id, 'Введите полное имя:')
-        case 'register_sex':
-            await RegisterStates.SEX_STATE.set()
+        case 'register_tenant_sex':
+            await RegisterTenantStates.SEX_STATE.set()
             await bot.send_message(callback_query.from_user.id, 'Укажите пол:', reply_markup=sex_keyboard)
-        case 'register_city':
-            await RegisterStates.CITY_STATE.set()
+        case 'register_tenant_city':
+            await RegisterTenantStates.CITY_STATE.set()
             await bot.send_message(callback_query.from_user.id, 'Введите город:')
-        case 'register_qualities':
-            await RegisterStates.QUALITIES_STATE.set()
+        case 'register_tenant_qualities':
+            await RegisterTenantStates.QUALITIES_STATE.set()
             await bot.send_message(callback_query.from_user.id, 'Введите персональные качества:')
-        case 'register_age':
-            await RegisterStates.AGE_STATE.set()
+        case 'register_tenant_age':
+            await RegisterTenantStates.AGE_STATE.set()
             await bot.send_message(callback_query.from_user.id, 'Введите возраст:')
-        case 'register_solvency':
-            await RegisterStates.SOLVENCY_STATE.set()
+        case 'register_tenant_solvency':
+            await RegisterTenantStates.SOLVENCY_STATE.set()
             await bot.send_message(callback_query.from_user.id, 'Укажите, являетесь ли вы платежеспособным:',
                                    reply_markup=solvency_keyboard)
-        case 'register_finish':
+        case 'register_tenant_finish':
             async with state.proxy() as data:
                 blank = []
                 if 'name' not in data:
@@ -79,45 +83,47 @@ async def register(callback_query: types.CallbackQuery, state: FSMContext):
                     await register_form(callback_query.from_user.id)
                 else:
                     full_name, sex, city, age = data['name'], data['sex'], data['city'], data['age']
-                    try:
-                        qualities, solvency = data['qualities'], data['solvency']
-                    except KeyError:
-                        qualities, solvency = '', 'null'
-                    finally:
-                        guest_controller.register(full_name, sex, city, qualities, age, solvency)
+                    qualities = data['qualities'] if 'qualities' in data else ''
+                    solvency = data['solvency'] if 'solvency' in data else 'null'
+
+                    tenant = guest_controller.register_tenant(callback_query.from_user.id, full_name, sex,
+                                                              city, qualities, age, solvency)
+                    if tenant:
                         await state.finish()
                         await bot.send_message(callback_query.from_user.id, 'Регистрация успешно завершена')
+                    else:
+                        await bot.send_message(callback_query.from_user.id, 'Во время регистрации произошла ошибка')
         case _:
             await bot.answer_callback_query(callback_query.id)
 
 
 async def input_register_str(message: types.Message, state: FSMContext, field: str):
-    await RegisterStates.START_STATE.set()
+    await RegisterTenantStates.START_STATE.set()
     async with state.proxy() as data:
         data[field] = message.text
     await register_form(message.from_user.id)
 
 
-@dispatcher.message_handler(state=RegisterStates.NAME_STATE)
+@dispatcher.message_handler(state=RegisterTenantStates.NAME_STATE)
 async def input_name(message: types.Message, state: FSMContext):
     await input_register_str(message, state, 'name')
 
 
-@dispatcher.message_handler(state=RegisterStates.CITY_STATE)
+@dispatcher.message_handler(state=RegisterTenantStates.CITY_STATE)
 async def input_city(message: types.Message, state: FSMContext):
     await input_register_str(message, state, 'city')
 
 
-@dispatcher.message_handler(state=RegisterStates.QUALITIES_STATE)
+@dispatcher.message_handler(state=RegisterTenantStates.QUALITIES_STATE)
 async def input_qualities(message: types.Message, state: FSMContext):
     await input_register_str(message, state, 'qualities')
 
 
-@dispatcher.callback_query_handler(state=RegisterStates.SEX_STATE, text_contains='sex')
+@dispatcher.callback_query_handler(state=RegisterTenantStates.SEX_STATE, text_contains='sex')
 async def input_sex(callback_query: types.CallbackQuery, state: FSMContext):
     match callback_query.data:
         case 'sex_male' | 'sex_female':
-            await RegisterStates.START_STATE.set()
+            await RegisterTenantStates.START_STATE.set()
             async with state.proxy() as data:
                 data['sex'] = 'M' if callback_query.data == 'sex_male' else 'F'
             await bot.answer_callback_query(callback_query.id)
@@ -126,7 +132,7 @@ async def input_sex(callback_query: types.CallbackQuery, state: FSMContext):
             await bot.answer_callback_query(callback_query.id)
 
 
-@dispatcher.message_handler(state=RegisterStates.AGE_STATE)
+@dispatcher.message_handler(state=RegisterTenantStates.AGE_STATE)
 async def input_age(message: types.Message, state: FSMContext):
     try:
         age = int(message.text)
@@ -139,15 +145,15 @@ async def input_age(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data['age'] = age
     finally:
-        await RegisterStates.START_STATE.set()
+        await RegisterTenantStates.START_STATE.set()
         await register_form(message.from_user.id)
 
 
-@dispatcher.callback_query_handler(state=RegisterStates.SOLVENCY_STATE, text_contains='solvency')
+@dispatcher.callback_query_handler(state=RegisterTenantStates.SOLVENCY_STATE, text_contains='solvency')
 async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext):
     match callback_query.data:
         case 'solvency_yes' | 'solvency_no':
-            await RegisterStates.START_STATE.set()
+            await RegisterTenantStates.START_STATE.set()
             async with state.proxy() as data:
                 data['solvency'] = True if callback_query.data == 'solvency_yes' else False
             await bot.answer_callback_query(callback_query.id)

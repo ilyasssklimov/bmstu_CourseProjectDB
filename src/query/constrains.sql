@@ -20,6 +20,12 @@ SELECT public.create_constraint (
     'ALTER TABLE public.tenant ADD CONSTRAINT tenant_pkey PRIMARY KEY (id);'
 );
 
+SELECT public.create_constraint (
+    'tenant',
+    'tenant_id_check',
+    'ALTER TABLE public.tenant ADD CONSTRAINT tenant_id_check CHECK (id > 0);'
+);
+
 SELECT public.create_constraint(
     'tenant',
     'tenant_full_name_check',

@@ -14,5 +14,5 @@ DB_PARAMS = {
 }
 
 
-DB_TABLES_FILE = '../query/tables.sql'
-DB_CONSTRAINS_FILE = '../query/constrains.sql'
+DB_TABLES_FILE = './query/tables.sql'
+DB_CONSTRAINS_FILE = './query/constrains.sql'

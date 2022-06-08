@@ -3,12 +3,14 @@ import psycopg2 as ps
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
+from aiogram.types import InlineKeyboardMarkup
 
 from src.database.config import API_TOKEN, DB_PARAMS
 from src.database.database import PostgresDB
 from src.controller.guest import GuestController
-from src.bot.keyboard import register_tenant_keyboard, sex_keyboard, solvency_keyboard
-from src.bot.states import RegisterTenantStates
+from src.bot.keyboard import get_register_tenant_keyboard, get_sex_keyboard, get_solvency_keyboard
+from src.bot.keyboard import get_register_landlord_keyboard
+from src.bot.states import RegisterTenantStates, RegisterLandlordStates, EntityTypes
 
 
 bot = Bot(token=API_TOKEN)
@@ -23,72 +25,113 @@ except ps.OperationalError:
 guest_controller = GuestController(database)
 
 
-async def register_form(user_id: int):
-    await bot.send_message(user_id, 'Заполните данные о себе:', reply_markup=register_tenant_keyboard)
-
-
-@dispatcher.message_handler(commands=['start'])
+@dispatcher.message_handler(commands='start')
 async def send_welcome(message: types.Message):
     logging.info('Starting bot')
     await message.reply('Привет! Я помогу тебе найти соседей, выбери действие :)')
 
 
-@dispatcher.message_handler(commands=['register_tenant'])
+async def register_form(user_id: int, keyboard: InlineKeyboardMarkup):
+    await bot.send_message(user_id, 'Заполните данные о себе:', reply_markup=keyboard)
+
+
+@dispatcher.message_handler(commands=['register_tenant', 'register_landlord'])
 async def send_register(message: types.Message):
     user_id = message.from_user.id
-    if guest_controller.check_tenant(user_id):
-        await bot.send_message(user_id, 'Вы уже зарегистрированы как арендатор')
-    else:
-        await RegisterTenantStates.START_STATE.set()
-        await register_form(user_id)
+    if message.text.endswith('tenant'):
+        if guest_controller.check_tenant(user_id):
+            await bot.send_message(user_id, 'Вы уже зарегистрированы как арендатор')
+        else:
+            await RegisterTenantStates.START_STATE.set()
+            await register_form(user_id, get_register_tenant_keyboard())
+    elif message.text.endswith('landlord'):
+        if guest_controller.check_landlord(user_id):
+            await bot.send_message(user_id, 'Вы уже зарегистрированы как арендодатель')
+        else:
+            await RegisterLandlordStates.START_STATE.set()
+            await register_form(user_id, get_register_landlord_keyboard())
 
 
-@dispatcher.callback_query_handler(state=RegisterTenantStates.START_STATE, text_contains='register_tenant')
+@dispatcher.callback_query_handler(state=[RegisterTenantStates.START_STATE, RegisterLandlordStates.START_STATE],
+                                   text_contains='register')
 async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext):
     match callback_query.data:
-        case 'register_tenant_name':
-            await RegisterTenantStates.NAME_STATE.set()
+        case 'register_tenant_name' | 'register_landlord_name' as register_name:
+            if 'tenant' in register_name:
+                await RegisterTenantStates.NAME_STATE.set()
+            elif 'landlord' in register_name:
+                await RegisterLandlordStates.NAME_STATE.set()
+            else:
+                raise ValueError('Invalid param to callback')
             await bot.send_message(callback_query.from_user.id, 'Введите полное имя:')
+
         case 'register_tenant_sex':
             await RegisterTenantStates.SEX_STATE.set()
-            await bot.send_message(callback_query.from_user.id, 'Укажите пол:', reply_markup=sex_keyboard)
-        case 'register_tenant_city':
-            await RegisterTenantStates.CITY_STATE.set()
+            await bot.send_message(callback_query.from_user.id, 'Укажите пол:', reply_markup=get_sex_keyboard())
+
+        case 'register_tenant_city' | 'register_landlord_city' as register_city:
+            if 'tenant' in register_city:
+                await RegisterTenantStates.CITY_STATE.set()
+            elif 'landlord' in register_city:
+                await RegisterLandlordStates.CITY_STATE.set()
+            else:
+                raise ValueError('Invalid param to callback')
             await bot.send_message(callback_query.from_user.id, 'Введите город:')
+
         case 'register_tenant_qualities':
             await RegisterTenantStates.QUALITIES_STATE.set()
             await bot.send_message(callback_query.from_user.id, 'Введите персональные качества:')
-        case 'register_tenant_age':
-            await RegisterTenantStates.AGE_STATE.set()
+
+        case 'register_tenant_age' | 'register_landlord_age' as register_age:
+            if 'tenant' in register_age:
+                await RegisterTenantStates.AGE_STATE.set()
+            elif 'landlord' in register_age:
+                await RegisterLandlordStates.AGE_STATE.set()
+            else:
+                raise ValueError('Invalid param to callback')
             await bot.send_message(callback_query.from_user.id, 'Введите возраст:')
+
         case 'register_tenant_solvency':
             await RegisterTenantStates.SOLVENCY_STATE.set()
             await bot.send_message(callback_query.from_user.id, 'Укажите, являетесь ли вы платежеспособным:',
-                                   reply_markup=solvency_keyboard)
-        case 'register_tenant_finish':
-            async with state.proxy() as data:
-                blank = []
-                if 'name' not in data:
-                    blank.append('Имя')
-                if 'sex' not in data:
-                    blank.append('Пол')
-                if 'city' not in data:
-                    blank.append('Город')
-                if 'age' not in data:
-                    blank.append('Возраст')
+                                   reply_markup=get_solvency_keyboard())
 
+        case 'register_tenant_finish' | 'register_landlord_finish' as register_finish:
+            async with state.proxy() as data:
+                if 'tenant' in register_finish:
+                    fields = ['name', 'sex', 'city', 'age']
+                    ru_fields = ['Имя', 'Пол', 'Город', 'Возраст']
+                elif 'landlord' in register_finish:
+                    fields = ['name', 'city', 'age']
+                    ru_fields = ['Имя', 'Город', 'Возраст']
+                else:
+                    raise ValueError('Invalid param to callback')
+
+                blank = [ru_fields[fields.index(field)] for field in fields
+                         if field not in data]
                 if blank:
                     await bot.send_message(callback_query.from_user.id, 'Обязательными полями для ввода являются: ' +
                                                                         ', '.join(blank))
-                    await register_form(callback_query.from_user.id)
+                    if 'tenant' in register_finish:
+                        await register_form(callback_query.from_user.id, get_register_tenant_keyboard())
+                    elif 'landlord' in register_finish:
+                        await register_form(callback_query.from_user.id, get_register_landlord_keyboard())
+                    else:
+                        raise ValueError('Invalid param to callback')
                 else:
-                    full_name, sex, city, age = data['name'], data['sex'], data['city'], data['age']
-                    qualities = data['qualities'] if 'qualities' in data else ''
-                    solvency = data['solvency'] if 'solvency' in data else 'null'
+                    register_data = [data[field] for field in fields]
 
-                    tenant = guest_controller.register_tenant(callback_query.from_user.id, full_name, sex,
-                                                              city, qualities, age, solvency)
-                    if tenant:
+                    if 'tenant' in register_finish:
+                        qualities = data['qualities'] if 'qualities' in data else ''
+                        solvency = data['solvency'] if 'solvency' in data else 'null'
+                        user = guest_controller.register_tenant(callback_query.from_user.id, *register_data[:-1],
+                                                                qualities, register_data[-1], solvency)
+                    elif 'landlord' in register_finish:
+                        user = guest_controller.register_landlord(callback_query.from_user.id, *register_data)
+                    else:
+                        raise ValueError('Invalid param to callback')
+
+                    if user:
                         await state.finish()
                         await bot.send_message(callback_query.from_user.id, 'Регистрация успешно завершена')
                     else:
@@ -97,26 +140,37 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
             await bot.answer_callback_query(callback_query.id)
 
 
-async def input_register_str(message: types.Message, state: FSMContext, field: str):
-    await RegisterTenantStates.START_STATE.set()
+async def input_register_str(message: types.Message, state: FSMContext, field: str, user: EntityTypes):
     async with state.proxy() as data:
         data[field] = message.text
-    await register_form(message.from_user.id)
+
+    if user == EntityTypes.TENANT:
+        await RegisterTenantStates.START_STATE.set()
+        await register_form(message.from_user.id, get_register_tenant_keyboard())
+    elif user == EntityTypes.LANDLORD:
+        await RegisterLandlordStates.START_STATE.set()
+        await register_form(message.from_user.id, get_register_landlord_keyboard())
 
 
-@dispatcher.message_handler(state=RegisterTenantStates.NAME_STATE)
+@dispatcher.message_handler(state=[RegisterTenantStates.NAME_STATE, RegisterLandlordStates.NAME_STATE])
 async def input_name(message: types.Message, state: FSMContext):
-    await input_register_str(message, state, 'name')
+    if await state.get_state() == RegisterTenantStates.NAME_STATE.state:
+        await input_register_str(message, state, 'name', EntityTypes.TENANT)
+    elif await state.get_state() == RegisterLandlordStates.NAME_STATE.state:
+        await input_register_str(message, state, 'name', EntityTypes.LANDLORD)
 
 
-@dispatcher.message_handler(state=RegisterTenantStates.CITY_STATE)
+@dispatcher.message_handler(state=[RegisterTenantStates.CITY_STATE, RegisterLandlordStates.CITY_STATE])
 async def input_city(message: types.Message, state: FSMContext):
-    await input_register_str(message, state, 'city')
+    if await state.get_state() == RegisterTenantStates.CITY_STATE.state:
+        await input_register_str(message, state, 'city', EntityTypes.TENANT)
+    elif await state.get_state() == RegisterLandlordStates.CITY_STATE.state:
+        await input_register_str(message, state, 'city', EntityTypes.LANDLORD)
 
 
 @dispatcher.message_handler(state=RegisterTenantStates.QUALITIES_STATE)
 async def input_qualities(message: types.Message, state: FSMContext):
-    await input_register_str(message, state, 'qualities')
+    await input_register_str(message, state, 'qualities', EntityTypes.TENANT)
 
 
 @dispatcher.callback_query_handler(state=RegisterTenantStates.SEX_STATE, text_contains='sex')
@@ -127,12 +181,12 @@ async def input_sex(callback_query: types.CallbackQuery, state: FSMContext):
             async with state.proxy() as data:
                 data['sex'] = 'M' if callback_query.data == 'sex_male' else 'F'
             await bot.answer_callback_query(callback_query.id)
-            await register_form(callback_query.from_user.id)
+            await register_form(callback_query.from_user.id, get_register_tenant_keyboard())
         case _:
             await bot.answer_callback_query(callback_query.id)
 
 
-@dispatcher.message_handler(state=RegisterTenantStates.AGE_STATE)
+@dispatcher.message_handler(state=[RegisterTenantStates.AGE_STATE, RegisterLandlordStates.AGE_STATE])
 async def input_age(message: types.Message, state: FSMContext):
     try:
         age = int(message.text)
@@ -145,8 +199,12 @@ async def input_age(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data['age'] = age
     finally:
-        await RegisterTenantStates.START_STATE.set()
-        await register_form(message.from_user.id)
+        if await state.get_state() == RegisterTenantStates.AGE_STATE.state:
+            await RegisterTenantStates.START_STATE.set()
+            await register_form(message.from_user.id, get_register_tenant_keyboard())
+        elif await state.get_state() == RegisterLandlordStates.AGE_STATE.state:
+            await RegisterLandlordStates.START_STATE.set()
+            await register_form(message.from_user.id, get_register_landlord_keyboard())
 
 
 @dispatcher.callback_query_handler(state=RegisterTenantStates.SOLVENCY_STATE, text_contains='solvency')
@@ -157,7 +215,7 @@ async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext)
             async with state.proxy() as data:
                 data['solvency'] = True if callback_query.data == 'solvency_yes' else False
             await bot.answer_callback_query(callback_query.id)
-            await register_form(callback_query.from_user.id)
+            await register_form(callback_query.from_user.id, get_register_tenant_keyboard())
         case _:
             await bot.answer_callback_query(callback_query.id)
 

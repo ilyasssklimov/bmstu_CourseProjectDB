@@ -38,6 +38,9 @@ class Tenant:
     def solvency(self):
         return self.__args[6]
 
+    def get_params(self):
+        return list(self.__args.values())
+
     def set_id(self, value):
         self.__args[0] = value
 

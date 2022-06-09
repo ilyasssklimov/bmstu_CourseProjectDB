@@ -10,25 +10,25 @@ from src.database.database import PostgresDB
 from src.controller.guest import GuestController
 from src.bot.keyboard import get_register_tenant_keyboard, get_sex_keyboard, get_solvency_keyboard
 from src.bot.keyboard import get_register_landlord_keyboard
+from src.bot.message import MESSAGE_START, MESSAGE_HELP
 from src.bot.states import RegisterTenantStates, RegisterLandlordStates, EntityTypes
 
 
 bot = Bot(token=API_TOKEN)
 dispatcher = Dispatcher(bot, storage=MemoryStorage())
-
-try:
-    database = PostgresDB(DB_PARAMS)
-except ps.OperationalError:
-    logging.error('Error! Unable to connect to database')
-    raise ValueError('Invalid params to connect to DB')
-
+database = PostgresDB(DB_PARAMS)
 guest_controller = GuestController(database)
 
 
 @dispatcher.message_handler(commands='start')
 async def send_welcome(message: types.Message):
     logging.info('Starting bot')
-    await message.reply('Привет! Я помогу тебе найти соседей, выбери действие :)')
+    await bot.send_message(message.from_user.id, MESSAGE_START)
+
+
+@dispatcher.message_handler(commands='help')
+async def send_help(message: types.Message):
+    await bot.send_message(message.from_user.id, MESSAGE_HELP)
 
 
 async def register_form(user_id: int, keyboard: InlineKeyboardMarkup):

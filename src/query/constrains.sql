@@ -5,8 +5,8 @@ $$
 BEGIN
     IF NOT EXISTS (SELECT constraint_name
                    FROM information_schema.constraint_column_usage
-                   WHERE table_name = t_name AND constraint_name = c_name) then
-        execute c_sql;
+                   WHERE table_name = t_name AND constraint_name = c_name) THEN
+        EXECUTE c_sql;
     END IF;
 END;
 $$

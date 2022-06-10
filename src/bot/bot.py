@@ -5,7 +5,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup
 
-from src.database.config import API_TOKEN, DB_PARAMS
+from src.database.config import API_TOKEN, DB_DEFAULT_PARAMS
 from src.database.database import PostgresDB
 from src.controller.guest import GuestController
 from src.bot.keyboard import get_register_tenant_keyboard, get_sex_keyboard, get_solvency_keyboard
@@ -16,7 +16,7 @@ from src.bot.states import RegisterTenantStates, RegisterLandlordStates, EntityT
 
 bot = Bot(token=API_TOKEN)
 dispatcher = Dispatcher(bot, storage=MemoryStorage())
-database = PostgresDB(DB_PARAMS)
+database = PostgresDB(DB_DEFAULT_PARAMS)
 guest_controller = GuestController(database)
 
 

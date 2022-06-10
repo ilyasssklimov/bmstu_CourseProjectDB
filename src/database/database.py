@@ -14,13 +14,7 @@ class PostgresDB:
         self.execute_file(DB_ROLES_FILE)
 
     def connect_db(self, db_params):
-        self.__connection = ps.connect(
-            database=db_params['database'],
-            user=db_params['user'],
-            password=db_params['password'],
-            host=db_params['host'],
-            port=db_params['port']
-        )
+        self.__connection = ps.connect(**db_params)
         self.__cursor = self.__connection.cursor()
 
     def close_db(self):

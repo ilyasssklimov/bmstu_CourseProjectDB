@@ -1,3 +1,5 @@
+-- execute 'CREATE DATABASE say_no_to_hostel;' if database doesn't exist
+
 -- create table public.tenant
 CREATE TABLE IF NOT EXISTS public.tenant (
     id integer,

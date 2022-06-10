@@ -30,3 +30,12 @@ LANGUAGE 'plpgsql';
 -- create admin role
 SELECT public.delete_role('admin');
 SELECT public.create_role('admin','CREATE ROLE admin LOGIN PASSWORD ''admin'';');
+GRANT postgres TO admin;
+
+-- create guest role
+SELECT public.delete_role('guest');
+SELECT public.create_role('guest','CREATE ROLE guest LOGIN PASSWORD ''guest'';');
+GRANT SELECT ON public.tenant TO guest;
+GRANT SELECT ON public.landlord TO guest;
+GRANT INSERT ON public.tenant TO guest;
+GRANT INSERT ON public.landlord TO guest;

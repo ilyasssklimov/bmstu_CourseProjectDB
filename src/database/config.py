@@ -16,7 +16,15 @@ DB_DEFAULT_PARAMS = {
 DB_ADMIN_PARAMS = {
     'database': 'say_no_to_hostel',
     'user': 'admin',
-    'password': 'admin  ',
+    'password': 'admin',
+    'host': 'localhost',
+    'port': 5432
+}
+
+DB_GUEST_PARAMS = {
+    'database': 'say_no_to_hostel',
+    'user': 'guest',
+    'password': 'guest',
     'host': 'localhost',
     'port': 5432
 }

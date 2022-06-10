@@ -30,3 +30,10 @@ class RegisterLandlordStates(StatesGroup):
 class EntityTypes(Enum):
     TENANT = 1
     LANDLORD = 2
+
+
+class RolesDB(Enum):
+    GUEST = 1
+    TENANT = 2
+    LANDLORD = 3
+    ADMIN = 4

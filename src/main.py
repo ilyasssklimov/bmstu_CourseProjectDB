@@ -1,10 +1,21 @@
 from aiogram import executor
-from bot.bot import dispatcher
+from bot.bot import SayNoToHostelBot
 from bot.logger import init_logger
 import sys
 
+from src.bot.states import RolesDB
 
-if __name__ == '__main__':
+
+def main():
     sys.path.append('.')
     init_logger()
-    executor.start_polling(dispatcher, skip_updates=True)
+
+    SayNoToHostelBot.execute_init_files()
+    SayNoToHostelBot.close_connection()
+    SayNoToHostelBot.set_role(RolesDB.GUEST)
+
+    executor.start_polling(SayNoToHostelBot.dispatcher, skip_updates=True)
+
+
+if __name__ == '__main__':
+    main()

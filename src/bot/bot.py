@@ -5,55 +5,70 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup
 
-from src.database.config import API_TOKEN, DB_DEFAULT_PARAMS
+from src.database.config import API_TOKEN, DB_DEFAULT_PARAMS, DB_GUEST_PARAMS
 from src.database.database import PostgresDB
 from src.controller.guest import GuestController
 from src.bot.keyboard import get_register_tenant_keyboard, get_sex_keyboard, get_solvency_keyboard
 from src.bot.keyboard import get_register_landlord_keyboard
 from src.bot.message import MESSAGE_START, MESSAGE_HELP
-from src.bot.states import RegisterTenantStates, RegisterLandlordStates, EntityTypes
+from src.bot.states import RegisterTenantStates, RegisterLandlordStates, EntityTypes, RolesDB
 
 
-bot = Bot(token=API_TOKEN)
-dispatcher = Dispatcher(bot, storage=MemoryStorage())
-database = PostgresDB(DB_DEFAULT_PARAMS)
-guest_controller = GuestController(database)
+class SayNoToHostelBot:
+    bot = Bot(token=API_TOKEN)
+    dispatcher = Dispatcher(bot, storage=MemoryStorage())
+    database = PostgresDB(DB_DEFAULT_PARAMS)
+    controller = None
+
+    @classmethod
+    def execute_init_files(cls):
+        cls.database.execute_init_files()
+
+    @classmethod
+    def close_connection(cls):
+        cls.database.close_connection()
+
+    @classmethod
+    def set_role(cls, role: RolesDB):
+        if role == RolesDB.GUEST:
+            cls.database = PostgresDB(DB_GUEST_PARAMS)
+            cls.controller = GuestController(cls.database)
 
 
-@dispatcher.message_handler(commands='start')
+@SayNoToHostelBot.dispatcher.message_handler(commands='start')
 async def send_welcome(message: types.Message):
     logging.info('Starting bot')
-    await bot.send_message(message.from_user.id, MESSAGE_START)
+    await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_START)
 
 
-@dispatcher.message_handler(commands='help')
+@SayNoToHostelBot.dispatcher.message_handler(commands='help')
 async def send_help(message: types.Message):
-    await bot.send_message(message.from_user.id, MESSAGE_HELP)
+    await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
 
 
 async def register_form(user_id: int, keyboard: InlineKeyboardMarkup):
-    await bot.send_message(user_id, 'Заполните данные о себе:', reply_markup=keyboard)
+    await SayNoToHostelBot.bot.send_message(user_id, 'Заполните данные о себе:', reply_markup=keyboard)
 
 
-@dispatcher.message_handler(commands=['register_tenant', 'register_landlord'])
+@SayNoToHostelBot.dispatcher.message_handler(commands=['register_tenant', 'register_landlord'])
 async def send_register(message: types.Message):
     user_id = message.from_user.id
     if message.text.endswith('tenant'):
-        if guest_controller.check_tenant(user_id):
-            await bot.send_message(user_id, 'Вы уже зарегистрированы как арендатор')
+        if SayNoToHostelBot.controller.check_tenant(user_id):
+            await SayNoToHostelBot.bot.send_message(user_id, 'Вы уже зарегистрированы как арендатор')
         else:
             await RegisterTenantStates.START_STATE.set()
             await register_form(user_id, get_register_tenant_keyboard())
     elif message.text.endswith('landlord'):
-        if guest_controller.check_landlord(user_id):
-            await bot.send_message(user_id, 'Вы уже зарегистрированы как арендодатель')
+        if SayNoToHostelBot.controller.check_landlord(user_id):
+            await SayNoToHostelBot.bot.send_message(user_id, 'Вы уже зарегистрированы как арендодатель')
         else:
             await RegisterLandlordStates.START_STATE.set()
             await register_form(user_id, get_register_landlord_keyboard())
 
 
-@dispatcher.callback_query_handler(state=[RegisterTenantStates.START_STATE, RegisterLandlordStates.START_STATE],
-                                   text_contains='register')
+@SayNoToHostelBot.dispatcher.callback_query_handler(
+    state=[RegisterTenantStates.START_STATE, RegisterLandlordStates.START_STATE], text_contains='register')
 async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext):
     match callback_query.data:
         case 'register_tenant_name' | 'register_landlord_name' as register_name:
@@ -63,11 +78,12 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                 await RegisterLandlordStates.NAME_STATE.set()
             else:
                 raise ValueError('Invalid param to callback')
-            await bot.send_message(callback_query.from_user.id, 'Введите полное имя:')
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите полное имя:')
 
         case 'register_tenant_sex':
             await RegisterTenantStates.SEX_STATE.set()
-            await bot.send_message(callback_query.from_user.id, 'Укажите пол:', reply_markup=get_sex_keyboard())
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Укажите пол:',
+                                                    reply_markup=get_sex_keyboard())
 
         case 'register_tenant_city' | 'register_landlord_city' as register_city:
             if 'tenant' in register_city:
@@ -76,11 +92,11 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                 await RegisterLandlordStates.CITY_STATE.set()
             else:
                 raise ValueError('Invalid param to callback')
-            await bot.send_message(callback_query.from_user.id, 'Введите город:')
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите город:')
 
         case 'register_tenant_qualities':
             await RegisterTenantStates.QUALITIES_STATE.set()
-            await bot.send_message(callback_query.from_user.id, 'Введите персональные качества:')
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите персональные качества:')
 
         case 'register_tenant_age' | 'register_landlord_age' as register_age:
             if 'tenant' in register_age:
@@ -89,12 +105,14 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                 await RegisterLandlordStates.AGE_STATE.set()
             else:
                 raise ValueError('Invalid param to callback')
-            await bot.send_message(callback_query.from_user.id, 'Введите возраст:')
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите возраст:')
 
         case 'register_tenant_solvency':
             await RegisterTenantStates.SOLVENCY_STATE.set()
-            await bot.send_message(callback_query.from_user.id, 'Укажите, являетесь ли вы платежеспособным:',
-                                   reply_markup=get_solvency_keyboard())
+            await SayNoToHostelBot.bot.send_message(
+                callback_query.from_user.id, 'Укажите, являетесь ли вы платежеспособным:',
+                reply_markup=get_solvency_keyboard()
+            )
 
         case 'register_tenant_finish' | 'register_landlord_finish' as register_finish:
             async with state.proxy() as data:
@@ -110,8 +128,8 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                 blank = [ru_fields[fields.index(field)] for field in fields
                          if field not in data]
                 if blank:
-                    await bot.send_message(callback_query.from_user.id, 'Обязательными полями для ввода являются: ' +
-                                                                        ', '.join(blank))
+                    await SayNoToHostelBot.bot.send_message(
+                        callback_query.from_user.id, 'Обязательными полями для ввода являются: ' + ', '.join(blank))
                     if 'tenant' in register_finish:
                         await register_form(callback_query.from_user.id, get_register_tenant_keyboard())
                     elif 'landlord' in register_finish:
@@ -120,24 +138,26 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                         raise ValueError('Invalid param to callback')
                 else:
                     register_data = [data[field] for field in fields]
-
                     if 'tenant' in register_finish:
                         qualities = data['qualities'] if 'qualities' in data else ''
                         solvency = data['solvency'] if 'solvency' in data else 'null'
-                        user = guest_controller.register_tenant(callback_query.from_user.id, *register_data[:-1],
-                                                                qualities, register_data[-1], solvency)
+                        user = SayNoToHostelBot.controller.register_tenant(
+                            callback_query.from_user.id, *register_data[:-1], qualities, register_data[-1], solvency)
                     elif 'landlord' in register_finish:
-                        user = guest_controller.register_landlord(callback_query.from_user.id, *register_data)
+                        user = SayNoToHostelBot.controller.register_landlord(callback_query.from_user.id,
+                                                                             *register_data)
                     else:
                         raise ValueError('Invalid param to callback')
 
                     if user:
                         await state.finish()
-                        await bot.send_message(callback_query.from_user.id, 'Регистрация успешно завершена')
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Регистрация успешно завершена')
                     else:
-                        await bot.send_message(callback_query.from_user.id, 'Во время регистрации произошла ошибка')
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Во время регистрации произошла ошибка')
         case _:
-            await bot.answer_callback_query(callback_query.id)
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
 
 async def input_register_str(message: types.Message, state: FSMContext, field: str, user: EntityTypes):
@@ -152,7 +172,7 @@ async def input_register_str(message: types.Message, state: FSMContext, field: s
         await register_form(message.from_user.id, get_register_landlord_keyboard())
 
 
-@dispatcher.message_handler(state=[RegisterTenantStates.NAME_STATE, RegisterLandlordStates.NAME_STATE])
+@SayNoToHostelBot.dispatcher.message_handler(state=[RegisterTenantStates.NAME_STATE, RegisterLandlordStates.NAME_STATE])
 async def input_name(message: types.Message, state: FSMContext):
     if await state.get_state() == RegisterTenantStates.NAME_STATE.state:
         await input_register_str(message, state, 'name', EntityTypes.TENANT)
@@ -160,7 +180,7 @@ async def input_name(message: types.Message, state: FSMContext):
         await input_register_str(message, state, 'name', EntityTypes.LANDLORD)
 
 
-@dispatcher.message_handler(state=[RegisterTenantStates.CITY_STATE, RegisterLandlordStates.CITY_STATE])
+@SayNoToHostelBot.dispatcher.message_handler(state=[RegisterTenantStates.CITY_STATE, RegisterLandlordStates.CITY_STATE])
 async def input_city(message: types.Message, state: FSMContext):
     if await state.get_state() == RegisterTenantStates.CITY_STATE.state:
         await input_register_str(message, state, 'city', EntityTypes.TENANT)
@@ -168,33 +188,34 @@ async def input_city(message: types.Message, state: FSMContext):
         await input_register_str(message, state, 'city', EntityTypes.LANDLORD)
 
 
-@dispatcher.message_handler(state=RegisterTenantStates.QUALITIES_STATE)
+@SayNoToHostelBot.dispatcher.message_handler(state=RegisterTenantStates.QUALITIES_STATE)
 async def input_qualities(message: types.Message, state: FSMContext):
     await input_register_str(message, state, 'qualities', EntityTypes.TENANT)
 
 
-@dispatcher.callback_query_handler(state=RegisterTenantStates.SEX_STATE, text_contains='sex')
+@SayNoToHostelBot.dispatcher.callback_query_handler(state=RegisterTenantStates.SEX_STATE, text_contains='sex')
 async def input_sex(callback_query: types.CallbackQuery, state: FSMContext):
     match callback_query.data:
         case 'sex_male' | 'sex_female':
             await RegisterTenantStates.START_STATE.set()
             async with state.proxy() as data:
                 data['sex'] = 'M' if callback_query.data == 'sex_male' else 'F'
-            await bot.answer_callback_query(callback_query.id)
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
             await register_form(callback_query.from_user.id, get_register_tenant_keyboard())
         case _:
-            await bot.answer_callback_query(callback_query.id)
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
 
-@dispatcher.message_handler(state=[RegisterTenantStates.AGE_STATE, RegisterLandlordStates.AGE_STATE])
+@SayNoToHostelBot.dispatcher.message_handler(state=[RegisterTenantStates.AGE_STATE, RegisterLandlordStates.AGE_STATE])
 async def input_age(message: types.Message, state: FSMContext):
     try:
         age = int(message.text)
         assert 14 <= age <= 100
     except ValueError:
-        await bot.send_message(message.from_user.id, 'Возраст должен являться целым положительным числом')
+        await SayNoToHostelBot.bot.send_message(message.from_user.id,
+                                                'Возраст должен являться целым положительным числом')
     except AssertionError:
-        await bot.send_message(message.from_user.id, 'Возраст не может быть меньше 14 и больше 100')
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Возраст не может быть меньше 14 и больше 100')
     else:
         async with state.proxy() as data:
             data['age'] = age
@@ -207,19 +228,19 @@ async def input_age(message: types.Message, state: FSMContext):
             await register_form(message.from_user.id, get_register_landlord_keyboard())
 
 
-@dispatcher.callback_query_handler(state=RegisterTenantStates.SOLVENCY_STATE, text_contains='solvency')
+@SayNoToHostelBot.dispatcher.callback_query_handler(state=RegisterTenantStates.SOLVENCY_STATE, text_contains='solvency')
 async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext):
     match callback_query.data:
         case 'solvency_yes' | 'solvency_no':
             await RegisterTenantStates.START_STATE.set()
             async with state.proxy() as data:
                 data['solvency'] = True if callback_query.data == 'solvency_yes' else False
-            await bot.answer_callback_query(callback_query.id)
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
             await register_form(callback_query.from_user.id, get_register_tenant_keyboard())
         case _:
-            await bot.answer_callback_query(callback_query.id)
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
 
-@dispatcher.message_handler()
+@SayNoToHostelBot.dispatcher.message_handler()
 async def last_handler(message: types.Message):
     await message.answer('Вы ввели что-то неверное, для получения информации введите /help')

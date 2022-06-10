@@ -9,6 +9,8 @@ class PostgresDB:
         self.__connection = None
         self.__cursor = None
         self.connect_db(db_params)
+
+    def execute_init_files(self):
         self.execute_file(DB_TABLES_FILE)
         self.execute_file(DB_CONSTRAINS_FILE)
         self.execute_file(DB_ROLES_FILE)
@@ -17,7 +19,7 @@ class PostgresDB:
         self.__connection = ps.connect(**db_params)
         self.__cursor = self.__connection.cursor()
 
-    def close_db(self):
+    def close_connection(self):
         self.__cursor.close()
         self.__connection.close()
 

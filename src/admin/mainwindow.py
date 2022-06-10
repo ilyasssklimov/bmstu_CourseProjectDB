@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QTableWidgetItem, QAbstractItemView, QMessageBox
 from src.admin.design import Ui_MainWindow
 from src.bot.states import EntityTypes
 from src.controller.admin import AdminController
-from src.database.config import DB_PARAMS
+from src.database.config import DB_ADMIN_PARAMS
 from src.database.database import PostgresDB
 from src.model.tenant import Tenant
 from src.model.landlord import Landlord
@@ -21,7 +21,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data = []
         self.upd_data = []
 
-        db = PostgresDB(DB_PARAMS)
+        db = PostgresDB(DB_ADMIN_PARAMS)
         self.controller = AdminController(db)
 
         self.get_funcs = {

@@ -8,15 +8,15 @@ from src.model.landlord import Landlord
 
 class GuestController:
     def __init__(self, db: PostgresDB):
-        self.__db = db
+        self._db = db
 
     def check_tenant(self, tenant_id: int):
-        return self.__db.check_tenant(tenant_id)
+        return self._db.check_tenant(tenant_id)
 
     def register_tenant(self, user_id: int, full_name: str, sex: str, city: str,
                         qualities: str, age: int, solvency: bool):
         try:
-            self.__db.add_tenant(user_id, full_name, sex, city, qualities, age, solvency)
+            self._db.add_tenant(user_id, full_name, sex, city, qualities, age, solvency)
             return Tenant(user_id, full_name, sex, city, qualities, age, solvency)
         except ps.errors.CheckViolation as e:
             logging.error(e)
@@ -24,12 +24,12 @@ class GuestController:
             return Tenant()
 
     def check_landlord(self, landlord_id: int):
-        return self.__db.check_landlord(landlord_id)
+        return self._db.check_landlord(landlord_id)
 
     def register_landlord(self, user_id: int, full_name: str, city: str, age: int):
         rating = 0.0
         try:
-            self.__db.add_landlord(user_id, full_name, city, rating, age)
+            self._db.add_landlord(user_id, full_name, city, rating, age)
             return Landlord(user_id, full_name, city, rating, age)
         except ps.errors.CheckViolation as e:
             logging.error(e)

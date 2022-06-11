@@ -1,11 +1,12 @@
 import logging
 import psycopg2 as ps
 
+from src.bot.states import RolesDB
 from src.database.config import DB_TABLES_FILE, DB_CONSTRAINS_FILE, DB_ROLES_FILE
 
 
 class PostgresDB:
-    def __init__(self, db_params):
+    def __init__(self, db_params: dict):
         self.__connection = None
         self.__cursor = None
         self.connect_db(db_params)
@@ -15,7 +16,7 @@ class PostgresDB:
         self.execute_file(DB_CONSTRAINS_FILE)
         self.execute_file(DB_ROLES_FILE)
 
-    def connect_db(self, db_params):
+    def connect_db(self, db_params: dict):
         self.__connection = ps.connect(**db_params)
         self.__cursor = self.__connection.cursor()
 
@@ -23,7 +24,11 @@ class PostgresDB:
         self.__cursor.close()
         self.__connection.close()
 
-    def execute(self, query):
+    def set_role(self, role: RolesDB):
+        query = f'SET ROLE {role.value}'
+        self.execute(query)
+
+    def execute(self, query: str):
         try:
             self.__cursor.execute(query)
         except Exception as e:
@@ -31,7 +36,7 @@ class PostgresDB:
             raise e
         self.__connection.commit()
 
-    def select(self, query):
+    def select(self, query: str):
         try:
             self.__cursor.execute(query)
         except Exception as e:
@@ -39,7 +44,7 @@ class PostgresDB:
             raise e
         return self.__cursor.fetchall()
 
-    def execute_file(self, filename):
+    def execute_file(self, filename: str):
         try:
             with open(filename) as f:
                 self.execute(f.read())

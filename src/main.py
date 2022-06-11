@@ -11,7 +11,6 @@ def main():
     init_logger()
 
     SayNoToHostelBot.execute_init_files()
-    SayNoToHostelBot.close_connection()
     SayNoToHostelBot.set_role(RolesDB.GUEST)
 
     executor.start_polling(SayNoToHostelBot.dispatcher, skip_updates=True)

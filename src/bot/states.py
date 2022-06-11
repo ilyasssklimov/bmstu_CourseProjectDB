@@ -33,7 +33,7 @@ class EntityTypes(Enum):
 
 
 class RolesDB(Enum):
-    GUEST = 1
-    TENANT = 2
-    LANDLORD = 3
-    ADMIN = 4
+    GUEST = 'guest'
+    TENANT = 'tenant'
+    LANDLORD = 'landlord'
+    ADMIN = 'admin'

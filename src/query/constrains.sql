@@ -87,3 +87,59 @@ SELECT public.create_constraint(
     'landlord_age_check',
     'ALTER TABLE public.landlord ADD CONSTRAINT landlord_age_check CHECK (age >= 14 AND age <= 100 AND age IS NOT NULL);'
 );
+
+
+-- create constraints to public.landlord
+SELECT public.create_constraint(
+    'flat',
+    'flat_pkey',
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_pkey PRIMARY KEY (id);'
+);
+
+SELECT public.create_constraint (
+    'flat',
+    'flat_id_check',
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_id_check CHECK (id > 0 AND id IS NOT NULL);'
+);
+
+SELECT public.create_constraint (
+    'flat',
+    'flat_owner_id_fkey',
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.landlord (id);'
+);
+
+SELECT public.create_constraint (
+    'flat',
+    'flat_owner_id_check',
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_owner_id_check CHECK (owner_id IS NOT NULL);'
+);
+
+SELECT public.create_constraint(
+    'flat',
+    'flat_price_check',
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_price_check CHECK (price > 0 AND price IS NOT NULL);'
+);
+
+SELECT public.create_constraint(
+    'flat',
+    'flat_square_check',
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_square_check CHECK (square > 0 AND square IS NOT NULL);'
+);
+
+SELECT public.create_constraint(
+    'flat',
+    'flat_address_check',
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_address_check CHECK (address IS NOT NULL);'
+);
+
+SELECT public.create_constraint(
+    'flat',
+    'flat_floor_check',
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_floor_check CHECK (floor > 0);'
+);
+
+SELECT public.create_constraint(
+    'flat',
+    'flat_max_floor_check',
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_max_floor_check CHECK (max_floor > 0);'
+);

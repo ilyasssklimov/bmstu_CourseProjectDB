@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
@@ -266,6 +268,29 @@ async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext)
         case _:
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
+
+@SayNoToHostelBot.dispatcher.message_handler(commands='show_flats')
+async def show_flats(message: types.Message):
+    flats = SayNoToHostelBot.controller.get_flats()
+    for flat in flats:
+        # await bot.send_photo(message.chat.id, car['photo'], caption=f'Название: {car["name"]}'
+        #                                                             f'\nЦена: {car["price"]}'
+        #                                                             f'\nПробег: {car["odometer"]}'
+        #                                                             f'\nДата торгов: {car["date"]}'
+        #                                                             f'\nСостояние: {car["code"]}'
+        #                                                             f'\nСсылка на аукцион: {car["link"]}')
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, f'Владелец: {flat.owner_id}\n'
+                                                                      f'Цена: {flat.price}\n'
+                                                                      f'Площадь: {flat.square}\n'
+                                                                      f'Адрес: {flat.address}\n'
+                                                                      f'Ближайшее метро: {flat.metro}\n'
+                                                                      f'Этаж: {flat.floor}\\{flat.max_floor}\n'
+                                                                      f'Описание: {flat.description}')
+        print(message.from_user.username, message.as_json())
+        # user_id = 580231406
+        # expire_date = datetime.now() + timedelta(days=1)
+        # link = await SayNoToHostelBot.bot.create_chat_invite_link(chat_id, expire_date.timestamp, 1)
+        # print(link.invite_link)
 
 @SayNoToHostelBot.dispatcher.message_handler()
 async def last_handler(message: types.Message):

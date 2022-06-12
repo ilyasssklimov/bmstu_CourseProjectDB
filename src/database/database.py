@@ -92,9 +92,9 @@ class PostgresDB:
         query = f'''SELECT * FROM public.tenant WHERE id = {tenant_id}'''
         tenants = self.select(query)
         logging.info('Checking tenants')
-        return True if tenants else False
+        return bool(tenants)
 
-    # landlord method
+    # landlord methods
     def add_landlord(self, user_id: int, full_name: str, city: str, rating: float, age: int):
         query = f'''
         INSERT INTO public.landlord (id, full_name, city, rating, age)
@@ -134,4 +134,20 @@ class PostgresDB:
         query = f'''SELECT * FROM public.landlord WHERE id = {landlord_id}'''
         landlords = self.select(query)
         logging.info('Checking landlords')
-        return True if landlords else False
+        return bool(landlords)
+
+    # flat methods
+    def add_flat(self, owner_id: int, price: int, square: float, address: str, metro: str,
+                 floor: int, max_floor: int, description: int):
+        query = f'''
+        INSERT INTO public.flat (owner_id, price, square, address, metro, floor, max_floor, description)
+        VALUES ({owner_id}, {price}, {square}, '{address}', '{metro}', {floor}, {max_floor}, '{description}')
+        '''
+        self.execute(query)
+        logging.info(f'Flat with owner_id \'{owner_id}\' is successfully added')
+        return owner_id, price, square, address, metro, floor, max_floor, description
+
+    def get_flats(self):
+        query = f'''SELECT * FROM public.flat'''
+        logging.info('Get all flats')
+        return self.select(query)

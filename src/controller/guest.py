@@ -2,6 +2,7 @@ import logging
 import psycopg2 as ps
 
 from src.database.database import PostgresDB
+from src.model.flat import Flat
 from src.model.tenant import Tenant
 from src.model.landlord import Landlord
 
@@ -21,7 +22,7 @@ class GuestController:
         except ps.errors.CheckViolation as e:
             logging.error(e)
             logging.error(f'Invalid params while registration tenant with name \'{full_name}\'')
-            return Tenant()
+        return Tenant()
 
     def check_landlord(self, landlord_id: int):
         return self._db.check_landlord(landlord_id)
@@ -34,4 +35,7 @@ class GuestController:
         except ps.errors.CheckViolation as e:
             logging.error(e)
             logging.error(f'Invalid params while registration landlord with name \'{full_name}\'')
-            return Landlord()
+        return Landlord()
+
+    def get_flats(self):
+        return [Flat(*flat[1:]) for flat in self._db.get_flats()]

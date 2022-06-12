@@ -32,18 +32,21 @@ SELECT public.delete_role('guest');
 SELECT public.create_role('guest','CREATE ROLE guest LOGIN PASSWORD ''guest'';');
 GRANT SELECT, INSERT ON public.tenant TO guest;
 GRANT SELECT, INSERT ON public.landlord TO guest;
+GRANT SELECT ON public.flat TO guest;
 
 -- create guest tenant
 SELECT public.delete_role('tenant');
 SELECT public.create_role('tenant','CREATE ROLE tenant LOGIN PASSWORD ''tenant'';');
 GRANT SELECT ON public.tenant TO tenant;
 GRANT SELECT ON public.landlord TO tenant;
+GRANT SELECT ON public.flat TO guest;
 
 -- create guest landlord
 SELECT public.delete_role('landlord');
 SELECT public.create_role('landlord','CREATE ROLE landlord LOGIN PASSWORD ''landlord'';');
 GRANT SELECT ON public.tenant TO landlord;
 GRANT SELECT ON public.landlord TO landlord;
+GRANT SELECT ON public.flat TO guest;
 
 -- create admin role
 SELECT public.delete_role('admin');

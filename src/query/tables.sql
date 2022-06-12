@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS public.landlord (
 
 -- create table public.flat
 CREATE TABLE IF NOT EXISTS public.flat (
-    id INTEGER,
+    id SERIAL,
     owner_id INTEGER,
     price INTEGER,
     square REAL,

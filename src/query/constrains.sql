@@ -89,7 +89,7 @@ SELECT public.create_constraint(
 );
 
 
--- create constraints to public.landlord
+-- create constraints to public.flat
 SELECT public.create_constraint(
     'flat',
     'flat_pkey',
@@ -97,13 +97,7 @@ SELECT public.create_constraint(
 );
 
 SELECT public.create_constraint (
-    'flat',
-    'flat_id_check',
-    'ALTER TABLE public.flat ADD CONSTRAINT flat_id_check CHECK (id > 0 AND id IS NOT NULL);'
-);
-
-SELECT public.create_constraint (
-    'flat',
+    'landlord',
     'flat_owner_id_fkey',
     'ALTER TABLE public.flat ADD CONSTRAINT flat_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.landlord (id);'
 );
@@ -141,5 +135,5 @@ SELECT public.create_constraint(
 SELECT public.create_constraint(
     'flat',
     'flat_max_floor_check',
-    'ALTER TABLE public.flat ADD CONSTRAINT flat_max_floor_check CHECK (max_floor > 0);'
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_max_floor_check CHECK (max_floor > 0 AND max_floor >= floor);'
 );

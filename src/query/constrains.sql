@@ -88,6 +88,12 @@ SELECT public.create_constraint(
     'ALTER TABLE public.landlord ADD CONSTRAINT landlord_age_check CHECK (age >= 14 AND age <= 100 AND age IS NOT NULL);'
 );
 
+SELECT public.create_constraint(
+    'landlord',
+    'landlord_phone_check',
+    'ALTER TABLE public.landlord ADD CONSTRAINT landlord_phone_check CHECK (char_length(phone) > 10 AND phone IS NOT NULL);'
+);
+
 
 -- create constraints to public.flat
 SELECT public.create_constraint(
@@ -136,4 +142,24 @@ SELECT public.create_constraint(
     'flat',
     'flat_max_floor_check',
     'ALTER TABLE public.flat ADD CONSTRAINT flat_max_floor_check CHECK (max_floor > 0 AND max_floor >= floor);'
+);
+
+
+-- create constraints to public.flat_photo
+SELECT public.create_constraint (
+    'flat',
+    'flat_photo_flat_id_fkey',
+    'ALTER TABLE public.flat_photo ADD CONSTRAINT flat_photo_flat_id_fkey FOREIGN KEY (flat_id) REFERENCES public.flat (id);'
+);
+
+SELECT public.create_constraint (
+    'flat_photo',
+    'flat_photo_flat_id_check',
+    'ALTER TABLE public.flat_photo ADD CONSTRAINT flat_photo_flat_id_check CHECK (flat_id IS NOT NULL);'
+);
+
+SELECT public.create_constraint(
+    'flat_photo',
+    'flat_photo_check',
+    'ALTER TABLE public.flat_photo ADD CONSTRAINT flat_photo_check CHECK (photo IS NOT NULL);'
 );

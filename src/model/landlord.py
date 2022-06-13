@@ -1,11 +1,12 @@
 class Landlord:
-    def __init__(self, landlord_id=-1, full_name='', city='', rating=0.0, age=-1):
+    def __init__(self, landlord_id=-1, full_name='', city='', rating=0.0, age=-1, phone=''):
         self.__args = {
             0: landlord_id,
             1: full_name,
             2: city,
             3: rating,
-            4: age
+            4: age,
+            5: phone
         }
 
     @property
@@ -28,6 +29,10 @@ class Landlord:
     def age(self):
         return self.__args[4]
 
+    @property
+    def phone(self):
+        return self.__args[5]
+
     def get_params(self):
         return list(self.__args.values())
 
@@ -45,6 +50,9 @@ class Landlord:
 
     def set_age(self, value):
         self.__args[4] = value
+
+    def set_phone(self, value):
+        self.__args[5] = value
 
     def __getitem__(self, item):
         if item in self.__args:
@@ -67,12 +75,13 @@ class Landlord:
             self.full_name == other.full_name and
             self.city == other.city and
             self.rating == other.rating and
-            self.age == other.age
+            self.age == other.age and
+            self.phone == other.phone
         )
 
     def __str__(self):
         return f'Landlord (id = {self.__args[0]}, full_name = {self.__args[1]}, city = {self.__args[2]}, ' \
-               f'rating = {self.__args[3]}, age = {self.__args[4]})'
+               f'rating = {self.__args[3]}, age = {self.__args[4]}, number = {self.__args[5]})'
 
     def __repr__(self):
         return str(self)

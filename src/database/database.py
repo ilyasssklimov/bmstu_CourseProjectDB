@@ -95,10 +95,10 @@ class PostgresDB:
         return bool(tenants)
 
     # landlord methods
-    def add_landlord(self, user_id: int, full_name: str, city: str, rating: float, age: int):
+    def add_landlord(self, user_id: int, full_name: str, city: str, rating: float, age: int, phone: str):
         query = f'''
-        INSERT INTO public.landlord (id, full_name, city, rating, age)
-        VALUES ({user_id}, '{full_name}', '{city}', {rating}, {age});
+        INSERT INTO public.landlord (id, full_name, city, rating, age, phone)
+        VALUES ({user_id}, '{full_name}', '{city}', {rating}, {age}, \'{phone}\');
         '''
         self.execute(query)
         logging.info(f'Landlord with name \'{full_name}\' is successfully added')

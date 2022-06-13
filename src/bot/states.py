@@ -21,6 +21,7 @@ class RegisterLandlordStates(StatesGroup):
     NAME_STATE = State()
     CITY_STATE = State()
     AGE_STATE = State()
+    PHONE_STATE = State()
 
     @classmethod
     def get_states(cls):

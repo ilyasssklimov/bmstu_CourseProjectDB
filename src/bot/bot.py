@@ -142,14 +142,18 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                 reply_markup=kb.get_solvency_keyboard()
             )
 
+        case 'register_landlord_phone':
+            await RegisterLandlordStates.PHONE_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите номер телефона:')
+
         case 'register_tenant_finish' | 'register_landlord_finish' as register_finish:
             async with state.proxy() as data:
                 if 'tenant' in register_finish:
                     fields = ['name', 'sex', 'city', 'age']
                     ru_fields = ['Имя', 'Пол', 'Город', 'Возраст']
                 elif 'landlord' in register_finish:
-                    fields = ['name', 'city', 'age']
-                    ru_fields = ['Имя', 'Город', 'Возраст']
+                    fields = ['name', 'city', 'age', 'phone']
+                    ru_fields = ['Имя', 'Город', 'Возраст', 'Телефон']
                 else:
                     raise ValueError('Invalid param to callback')
 
@@ -216,6 +220,17 @@ async def input_city(message: types.Message, state: FSMContext):
         await input_register_str(message, state, 'city', EntityTypes.LANDLORD)
 
 
+@SayNoToHostelBot.dispatcher.message_handler(state=RegisterLandlordStates.PHONE_STATE)
+async def input_phone(message: types.Message, state: FSMContext):
+    if len(message.text) <= 10:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id,
+                                                'Телефон должен быть больше, чем 10-значной последовательностью цифр')
+        await RegisterLandlordStates.START_STATE.set()
+        await register_form(message.from_user.id, kb.get_register_landlord_keyboard())
+    else:
+        await input_register_str(message, state, 'phone', EntityTypes.LANDLORD)
+
+
 @SayNoToHostelBot.dispatcher.message_handler(state=RegisterTenantStates.QUALITIES_STATE)
 async def input_qualities(message: types.Message, state: FSMContext):
     await input_register_str(message, state, 'qualities', EntityTypes.TENANT)
@@ -279,18 +294,15 @@ async def show_flats(message: types.Message):
         #                                                             f'\nДата торгов: {car["date"]}'
         #                                                             f'\nСостояние: {car["code"]}'
         #                                                             f'\nСсылка на аукцион: {car["link"]}')
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, f'Владелец: {flat.owner_id}\n'
-                                                                      f'Цена: {flat.price}\n'
-                                                                      f'Площадь: {flat.square}\n'
-                                                                      f'Адрес: {flat.address}\n'
-                                                                      f'Ближайшее метро: {flat.metro}\n'
-                                                                      f'Этаж: {flat.floor}\\{flat.max_floor}\n'
-                                                                      f'Описание: {flat.description}')
-        print(message.from_user.username, message.as_json())
-        # user_id = 580231406
-        # expire_date = datetime.now() + timedelta(days=1)
-        # link = await SayNoToHostelBot.bot.create_chat_invite_link(chat_id, expire_date.timestamp, 1)
-        # print(link.invite_link)
+        owner = SayNoToHostelBot.controller.get_landlord(flat.owner_id)
+        username = message.from_user.username
+        info = f'Владелец: {owner.full_name}'
+        if username:
+            info += f' (@{username})'
+        info += (f'\nТелефон: {owner.phone}\nЦена: {flat.price} ₽\nПлощадь: {flat.square} м²\nАдрес: {flat.address}'
+                 f'\nБлижайшее метро: {flat.metro}\nЭтаж: {flat.floor}\\{flat.max_floor}\nОписание: {flat.description}')
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, info)
+
 
 @SayNoToHostelBot.dispatcher.message_handler()
 async def last_handler(message: types.Message):

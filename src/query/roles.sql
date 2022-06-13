@@ -34,19 +34,19 @@ GRANT SELECT, INSERT ON public.tenant TO guest;
 GRANT SELECT, INSERT ON public.landlord TO guest;
 GRANT SELECT ON public.flat TO guest;
 
--- create guest tenant
+-- create tenant role
 SELECT public.delete_role('tenant');
 SELECT public.create_role('tenant','CREATE ROLE tenant LOGIN PASSWORD ''tenant'';');
 GRANT SELECT ON public.tenant TO tenant;
 GRANT SELECT ON public.landlord TO tenant;
-GRANT SELECT ON public.flat TO guest;
+GRANT SELECT ON public.flat TO tenant;
 
--- create guest landlord
+-- create landlord role
 SELECT public.delete_role('landlord');
 SELECT public.create_role('landlord','CREATE ROLE landlord LOGIN PASSWORD ''landlord'';');
 GRANT SELECT ON public.tenant TO landlord;
 GRANT SELECT ON public.landlord TO landlord;
-GRANT SELECT ON public.flat TO guest;
+GRANT SELECT ON public.flat TO landlord;
 
 -- create admin role
 SELECT public.delete_role('admin');

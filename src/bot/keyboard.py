@@ -42,9 +42,10 @@ def get_register_landlord_keyboard():
     name_btn = InlineKeyboardButton('Полное имя', callback_data='register_landlord_name')
     city_btn = InlineKeyboardButton('Город', callback_data='register_landlord_city')
     age_btn = InlineKeyboardButton('Возраст', callback_data='register_landlord_age')
+    number_btn = InlineKeyboardButton('Телефон', callback_data='register_landlord_phone')
     finish_btn = InlineKeyboardButton('Завершить регистрацию', callback_data='register_landlord_finish')
-    register_landlord_keyboard.row(name_btn)
-    register_landlord_keyboard.row(age_btn, city_btn)
+    register_landlord_keyboard.row(name_btn, age_btn)
+    register_landlord_keyboard.row(city_btn, number_btn)
     register_landlord_keyboard.add(finish_btn)
 
     return register_landlord_keyboard

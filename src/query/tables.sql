@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS public.landlord (
     full_name VARCHAR(100),
     city VARCHAR(30),
     rating REAL,
-    age INTEGER
+    age INTEGER,
+    phone VARCHAR(15)
 );
 
 
@@ -35,4 +36,10 @@ CREATE TABLE IF NOT EXISTS public.flat (
     floor INTEGER,
     max_floor INTEGER,
     description TEXT
+);
+
+-- create table public.flat_photo
+CREATE TABLE IF NOT EXISTS public.flat_photo (
+    flat_id INTEGER,
+    photo VARCHAR(100)
 );

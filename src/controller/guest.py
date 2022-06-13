@@ -27,11 +27,11 @@ class GuestController:
     def check_landlord(self, landlord_id: int):
         return self._db.check_landlord(landlord_id)
 
-    def register_landlord(self, user_id: int, full_name: str, city: str, age: int):
+    def register_landlord(self, user_id: int, full_name: str, city: str, age: int, phone: str):
         rating = 0.0
         try:
-            self._db.add_landlord(user_id, full_name, city, rating, age)
-            return Landlord(user_id, full_name, city, rating, age)
+            self._db.add_landlord(user_id, full_name, city, rating, age, phone)
+            return Landlord(user_id, full_name, city, rating, age, phone)
         except ps.errors.CheckViolation as e:
             logging.error(e)
             logging.error(f'Invalid params while registration landlord with name \'{full_name}\'')
@@ -39,3 +39,12 @@ class GuestController:
 
     def get_flats(self):
         return [Flat(*flat[1:]) for flat in self._db.get_flats()]
+
+    def get_landlord(self, landlord_id: int):
+        landlord = Landlord(*self._db.get_landlord(landlord_id))
+        if landlord:
+            logging.info(f'Get landlord by id \'{landlord_id}\'')
+            return landlord
+        else:
+            logging.error(f'Unable to get landlord by id = \'{landlord_id}\'')
+            return None

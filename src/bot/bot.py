@@ -1,19 +1,18 @@
-from datetime import datetime, timedelta
-
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup
 import logging
+import os
 
-from src.database.config import API_TOKEN, DB_DEFAULT_PARAMS, DB_GUEST_PARAMS, DB_TENANT_PARAMS, DB_LANDLORD_PARAMS
+from src.database.config import API_TOKEN, DB_DEFAULT_PARAMS, IMG_PATH
 from src.database.database import PostgresDB
 from src.controller.guest import GuestController
 from src.controller.tenant import TenantController
 from src.controller.landlord import LandlordController
 import src.bot.keyboard as kb
 from src.bot.message import MESSAGE_START, MESSAGE_HELP
-from src.bot.states import RegisterTenantStates, RegisterLandlordStates, EntityTypes, RolesDB
+from src.bot.states import RegisterTenantStates, RegisterLandlordStates, AddFlatStates, EntityTypes, RolesDB
 
 
 class SayNoToHostelBot:
@@ -57,6 +56,11 @@ class SayNoToHostelBot:
         if check_res:
             cls.set_role(RolesDB.LANDLORD)
         return check_res
+
+    @staticmethod
+    def init_img_directory():
+        if not os.path.exists(IMG_PATH):
+            os.makedirs(IMG_PATH)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='start')
@@ -177,7 +181,8 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                             callback_query.from_user.id, *register_data[:-1], qualities, register_data[-1], solvency)
                     elif 'landlord' in register_finish:
                         user = SayNoToHostelBot.controller.register_landlord(callback_query.from_user.id,
-                                                                             *register_data)
+                                                                             *register_data,
+                                                                             callback_query.from_user.username)
                     else:
                         raise ValueError('Invalid param to callback')
 
@@ -185,9 +190,16 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                         await state.finish()
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Регистрация успешно завершена')
+                        SayNoToHostelBot.check_tenant(callback_query.from_user.id)
+                        SayNoToHostelBot.check_landlord(callback_query.from_user.id)
                     else:
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Во время регистрации произошла ошибка')
+
+        case 'register_tenant_exit' | 'register_landlord_exit':
+            await state.finish()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Вы прервали регистрацию')
+
         case _:
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
@@ -220,6 +232,11 @@ async def input_city(message: types.Message, state: FSMContext):
         await input_register_str(message, state, 'city', EntityTypes.LANDLORD)
 
 
+@SayNoToHostelBot.dispatcher.message_handler(state=RegisterTenantStates.QUALITIES_STATE)
+async def input_qualities(message: types.Message, state: FSMContext):
+    await input_register_str(message, state, 'qualities', EntityTypes.TENANT)
+
+
 @SayNoToHostelBot.dispatcher.message_handler(state=RegisterLandlordStates.PHONE_STATE)
 async def input_phone(message: types.Message, state: FSMContext):
     if len(message.text) <= 10:
@@ -229,11 +246,6 @@ async def input_phone(message: types.Message, state: FSMContext):
         await register_form(message.from_user.id, kb.get_register_landlord_keyboard())
     else:
         await input_register_str(message, state, 'phone', EntityTypes.LANDLORD)
-
-
-@SayNoToHostelBot.dispatcher.message_handler(state=RegisterTenantStates.QUALITIES_STATE)
-async def input_qualities(message: types.Message, state: FSMContext):
-    await input_register_str(message, state, 'qualities', EntityTypes.TENANT)
 
 
 @SayNoToHostelBot.dispatcher.callback_query_handler(state=RegisterTenantStates.SEX_STATE, text_contains='sex')
@@ -255,8 +267,7 @@ async def input_age(message: types.Message, state: FSMContext):
         age = int(message.text)
         assert 14 <= age <= 100
     except ValueError:
-        await SayNoToHostelBot.bot.send_message(message.from_user.id,
-                                                'Возраст должен являться целым положительным числом')
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Возраст должен являться целым числом')
     except AssertionError:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Возраст не может быть меньше 14 и больше 100')
     else:
@@ -286,24 +297,212 @@ async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext)
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_flats')
 async def show_flats(message: types.Message):
-    flats = SayNoToHostelBot.controller.get_flats()
-    for flat in flats:
-        # await bot.send_photo(message.chat.id, car['photo'], caption=f'Название: {car["name"]}'
-        #                                                             f'\nЦена: {car["price"]}'
-        #                                                             f'\nПробег: {car["odometer"]}'
-        #                                                             f'\nДата торгов: {car["date"]}'
-        #                                                             f'\nСостояние: {car["code"]}'
-        #                                                             f'\nСсылка на аукцион: {car["link"]}')
+    flats, flat_photos = SayNoToHostelBot.controller.get_flats()
+    for flat, photos in zip(flats, flat_photos):
+        if photos[:-1]:
+            media = types.MediaGroup()
+            for photo in photos[:-1]:
+                media.attach_photo(types.InputFile(photo))
+            await SayNoToHostelBot.bot.send_media_group(message.chat.id, media=media)
+
         owner = SayNoToHostelBot.controller.get_landlord(flat.owner_id)
-        username = message.from_user.username
+        username = owner.username
         info = f'Владелец: {owner.full_name}'
         if username:
             info += f' (@{username})'
         info += (f'\nТелефон: {owner.phone}\nЦена: {flat.price} ₽\nПлощадь: {flat.square} м²\nАдрес: {flat.address}'
-                 f'\nБлижайшее метро: {flat.metro}\nЭтаж: {flat.floor}\\{flat.max_floor}\nОписание: {flat.description}')
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, info)
+                 f'\nБлижайшее метро: {flat.metro}\nЭтаж: {flat.floor}/{flat.max_floor}\nОписание: {flat.description}')
+
+        if photos[-1:]:
+            await SayNoToHostelBot.bot.send_photo(message.chat.id, types.InputFile(photos[-1]), caption=info)
+        else:
+            await SayNoToHostelBot.bot.send_message(message.from_user.id, info)
+
+
+async def add_flat_form(user_id: int):
+    await SayNoToHostelBot.bot.send_message(user_id, 'Введите данные о квартире:',
+                                            reply_markup=kb.get_add_flat_keyboard())
+
+
+@SayNoToHostelBot.dispatcher.message_handler(commands='add_flat')
+async def add_flat(message: types.Message, state: FSMContext):
+    if SayNoToHostelBot.role != RolesDB.LANDLORD:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы '
+                                                                      'как арендодатель')
+    else:
+        async with state.proxy() as data:
+            data['photo'] = []
+        await AddFlatStates.START_STATE.set()
+        await add_flat_form(message.from_user.id)
+
+
+@SayNoToHostelBot.dispatcher.callback_query_handler(state=AddFlatStates.START_STATE, text_contains='add_flat')
+async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext):
+    match callback_query.data:
+        case 'add_flat_price':
+            await AddFlatStates.PRICE_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите цену:')
+
+        case 'add_flat_square':
+            await AddFlatStates.SQUARE_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите площадь:')
+
+        case 'add_flat_address':
+            await AddFlatStates.ADDRESS_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите адрес:')
+
+        case 'add_flat_floor':
+            await AddFlatStates.FLOOR_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                    'Введите через пробел этаж и последний этаж в доме:')
+
+        case 'add_flat_metro':
+            await AddFlatStates.METRO_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите ближайшее метро:')
+
+        case 'add_flat_description':
+            await AddFlatStates.DESCRIPTION_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите описание:')
+
+        case 'add_flat_photo':
+            await AddFlatStates.PHOTO_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Отправьте фотки квартиры, '
+                                                                                 'по окончании введите stop')
+
+        case 'add_flat_finish':
+            async with state.proxy() as data:
+                fields = ['price', 'square', 'address']
+                ru_fields = ['Цена', 'Площадь', 'Адрес']
+                blank = [ru_fields[fields.index(field)] for field in fields
+                         if field not in data]
+                if blank:
+                    await SayNoToHostelBot.bot.send_message(
+                        callback_query.from_user.id, 'Обязательными полями для ввода являются: ' + ', '.join(blank))
+                    await add_flat_form(callback_query.from_user.id)
+                else:
+                    owner_id = callback_query.from_user.id
+                    flat_data = [data[field] for field in fields]
+                    metro = data['metro'] if 'metro' in data else ''
+                    floor = data['floor'] if 'floor' in data else 0
+                    max_floor = data['max_floor'] if 'max_floor' in data else 0
+                    description = data['description'] if 'description' in data else ''
+                    flat = SayNoToHostelBot.controller.add_flat(owner_id, *flat_data, metro, floor,
+                                                                max_floor, description)
+                    if flat:
+                        for photo in data['photo']:
+                            get_photo = SayNoToHostelBot.controller.add_photo(flat.flat_id, photo)
+                            if not get_photo:
+                                await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                        'Во время добавления фото произошла ошибка')
+                        await state.finish()
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Квартира успешно добавлена')
+                    else:
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Во время добавления квартиры произошла ошибка')
+        case 'add_flat_exit':
+            await state.finish()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Вы прервали добавление')
+
+        case _:
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+
+
+async def input_add_flat_str(message: types.Message, state: FSMContext, field: str):
+    async with state.proxy() as data:
+        data[field] = message.text
+
+    await AddFlatStates.START_STATE.set()
+    await add_flat_form(message.from_user.id)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.ADDRESS_STATE)
+async def input_address(message: types.Message, state: FSMContext):
+    await input_add_flat_str(message, state, 'address')
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.METRO_STATE)
+async def input_metro(message: types.Message, state: FSMContext):
+    await input_add_flat_str(message, state, 'metro')
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.DESCRIPTION_STATE)
+async def input_description(message: types.Message, state: FSMContext):
+    await input_add_flat_str(message, state, 'description')
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.PRICE_STATE)
+async def input_price(message: types.Message, state: FSMContext):
+    try:
+        price = int(message.text)
+        assert price > 0
+    except ValueError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Цена должна быть целым числом')
+    except AssertionError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Цена не может отрицательной')
+    else:
+        async with state.proxy() as data:
+            data['price'] = price
+    finally:
+        await AddFlatStates.START_STATE.set()
+        await add_flat_form(message.from_user.id)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.SQUARE_STATE)
+async def input_square(message: types.Message, state: FSMContext):
+    try:
+        square = float(message.text)
+        assert square > 0
+    except ValueError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Площадь должна быть числом')
+    except AssertionError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Площадь не может отрицательной')
+    else:
+        async with state.proxy() as data:
+            data['square'] = square
+    finally:
+        await AddFlatStates.START_STATE.set()
+        await add_flat_form(message.from_user.id)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.FLOOR_STATE)
+async def input_floor(message: types.Message, state: FSMContext):
+    try:
+        floor, max_floor = map(int, message.text.split())
+        assert 0 < floor <= max_floor
+    except ValueError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Должно быть введено два числа через пробел')
+    except AssertionError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Два числа должны быть положительными '
+                                                                      '(при этом первое не больше второго)')
+    else:
+        async with state.proxy() as data:
+            data['floor'] = floor
+            data['max_floor'] = max_floor
+    finally:
+        await AddFlatStates.START_STATE.set()
+        await add_flat_form(message.from_user.id)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.PHOTO_STATE, content_types='photo')
+async def input_photo(message: types.Message, state: FSMContext):
+    photo_name = os.path.join(IMG_PATH, f'{message.photo[-1].file_unique_id}.jpg')
+    await message.photo[-1].download(destination_file=photo_name)
+    async with state.proxy() as data:
+        data['photo'].append(photo_name)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.PHOTO_STATE)
+async def input_photo(message: types.Message):
+    if message.text == 'stop':
+        await AddFlatStates.START_STATE.set()
+        await add_flat_form(message.from_user.id)
+    else:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы ввели что-то неверное, '
+                                                                      'для окончания напишите stop')
 
 
 @SayNoToHostelBot.dispatcher.message_handler()
 async def last_handler(message: types.Message):
-    await message.answer('Вы ввели что-то неверное, для получения информации введите /help')
+    await SayNoToHostelBot.bot.send_message(message.from_user.id,
+                                            'Вы ввели что-то неверное, для получения информации введите /help')

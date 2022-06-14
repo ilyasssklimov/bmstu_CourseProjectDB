@@ -28,6 +28,21 @@ class RegisterLandlordStates(StatesGroup):
         return map(lambda x: x.state, cls.all_states)
 
 
+class AddFlatStates(StatesGroup):
+    START_STATE = State()
+    PRICE_STATE = State()
+    SQUARE_STATE = State()
+    ADDRESS_STATE = State()
+    METRO_STATE = State()
+    FLOOR_STATE = State()
+    DESCRIPTION_STATE = State()
+    PHOTO_STATE = State()
+
+    @classmethod
+    def get_states(cls):
+        return map(lambda x: x.state, cls.all_states)
+
+
 class EntityTypes(Enum):
     TENANT = 1
     LANDLORD = 2

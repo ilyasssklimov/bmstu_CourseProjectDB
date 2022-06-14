@@ -95,10 +95,10 @@ class PostgresDB:
         return bool(tenants)
 
     # landlord methods
-    def add_landlord(self, user_id: int, full_name: str, city: str, rating: float, age: int, phone: str):
+    def add_landlord(self, user_id: int, full_name: str, city: str, rating: float, age: int, phone: str, username: str):
         query = f'''
-        INSERT INTO public.landlord (id, full_name, city, rating, age, phone)
-        VALUES ({user_id}, '{full_name}', '{city}', {rating}, {age}, \'{phone}\');
+        INSERT INTO public.landlord (id, full_name, city, rating, age, phone, username)
+        VALUES ({user_id}, '{full_name}', '{city}', {rating}, {age}, '{phone}', '{username}');
         '''
         self.execute(query)
         logging.info(f'Landlord with name \'{full_name}\' is successfully added')
@@ -145,9 +145,21 @@ class PostgresDB:
         '''
         self.execute(query)
         logging.info(f'Flat with owner_id \'{owner_id}\' is successfully added')
-        return owner_id, price, square, address, metro, floor, max_floor, description
+        flat_id = self.select('''SELECT CURRVAL('flat_id_seq');''')[0][0]
+        return flat_id, owner_id, price, square, address, metro, floor, max_floor, description
 
     def get_flats(self):
         query = f'''SELECT * FROM public.flat'''
         logging.info('Get all flats')
         return self.select(query)
+
+    def add_photo(self, flat_id: int, photo: str):
+        query = f'''INSERT INTO public.flat_photo (flat_id, photo) VALUES ({flat_id}, '{photo}')'''
+        self.execute(query)
+        logging.info(f'Add photo to flat with id \'{flat_id}\'')
+        return photo
+
+    def get_flat_photos(self, flat_id: int):
+        query = f'''SELECT photo FROM public.flat_photo WHERE flat_id = {flat_id}'''
+        logging.info(f'Get photos of flat with id \'{flat_id}\'')
+        return [photo[0] for photo in self.select(query)]

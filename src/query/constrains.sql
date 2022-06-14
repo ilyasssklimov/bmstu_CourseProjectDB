@@ -135,13 +135,13 @@ SELECT public.create_constraint(
 SELECT public.create_constraint(
     'flat',
     'flat_floor_check',
-    'ALTER TABLE public.flat ADD CONSTRAINT flat_floor_check CHECK (floor > 0);'
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_floor_check CHECK (floor >= 0);'
 );
 
 SELECT public.create_constraint(
     'flat',
     'flat_max_floor_check',
-    'ALTER TABLE public.flat ADD CONSTRAINT flat_max_floor_check CHECK (max_floor > 0 AND max_floor >= floor);'
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_max_floor_check CHECK (max_floor >= 0 AND max_floor >= floor);'
 );
 
 

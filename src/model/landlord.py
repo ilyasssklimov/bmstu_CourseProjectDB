@@ -1,12 +1,13 @@
 class Landlord:
-    def __init__(self, landlord_id=-1, full_name='', city='', rating=0.0, age=-1, phone=''):
+    def __init__(self, landlord_id=-1, full_name='', city='', rating=0.0, age=-1, phone='', username=''):
         self.__args = {
             0: landlord_id,
             1: full_name,
             2: city,
             3: rating,
             4: age,
-            5: phone
+            5: phone,
+            6: username
         }
 
     @property
@@ -33,6 +34,10 @@ class Landlord:
     def phone(self):
         return self.__args[5]
 
+    @property
+    def username(self):
+        return self.__args[6]
+
     def get_params(self):
         return list(self.__args.values())
 
@@ -53,6 +58,9 @@ class Landlord:
 
     def set_phone(self, value):
         self.__args[5] = value
+
+    def set_number(self, value):
+        self.__args[6] = value
 
     def __getitem__(self, item):
         if item in self.__args:

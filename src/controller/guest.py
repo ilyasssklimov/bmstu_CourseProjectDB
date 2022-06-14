@@ -17,8 +17,8 @@ class GuestController:
     def register_tenant(self, user_id: int, full_name: str, sex: str, city: str,
                         qualities: str, age: int, solvency: bool):
         try:
-            self._db.add_tenant(user_id, full_name, sex, city, qualities, age, solvency)
-            return Tenant(user_id, full_name, sex, city, qualities, age, solvency)
+            tenant = self._db.add_tenant(user_id, full_name, sex, city, qualities, age, solvency)
+            return Tenant(*tenant)
         except ps.errors.CheckViolation as e:
             logging.error(e)
             logging.error(f'Invalid params while registration tenant with name \'{full_name}\'')
@@ -27,18 +27,20 @@ class GuestController:
     def check_landlord(self, landlord_id: int):
         return self._db.check_landlord(landlord_id)
 
-    def register_landlord(self, user_id: int, full_name: str, city: str, age: int, phone: str):
+    def register_landlord(self, user_id: int, full_name: str, city: str, age: int, phone: str, username: str):
         rating = 0.0
         try:
-            self._db.add_landlord(user_id, full_name, city, rating, age, phone)
-            return Landlord(user_id, full_name, city, rating, age, phone)
+            landlord = self._db.add_landlord(user_id, full_name, city, rating, age, phone, username)
+            return Landlord(*landlord)
         except ps.errors.CheckViolation as e:
             logging.error(e)
             logging.error(f'Invalid params while registration landlord with name \'{full_name}\'')
         return Landlord()
 
     def get_flats(self):
-        return [Flat(*flat[1:]) for flat in self._db.get_flats()]
+        flats = [Flat(*flat) for flat in self._db.get_flats()]
+        photos = [self._db.get_flat_photos(flat.flat_id) for flat in flats]
+        return flats, photos
 
     def get_landlord(self, landlord_id: int):
         landlord = Landlord(*self._db.get_landlord(landlord_id))

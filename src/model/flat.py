@@ -1,47 +1,53 @@
 class Flat:
-    def __init__(self, owner_id=-1, price=-1, square=-1, address='', metro='', floor=-1, max_floor=-1, description=''):
+    def __init__(self, flat_id=-1, owner_id=-1, price=-1, square=-1, address='', metro='',
+                 floor=-1, max_floor=-1, description=''):
         self.__args = {
-            0: owner_id,
-            1: price,
-            2: square,
-            3: address,
-            4: metro,
-            5: floor,
-            6: max_floor,
-            7: description
+            0: flat_id,
+            1: owner_id,
+            2: price,
+            3: square,
+            4: address,
+            5: metro,
+            6: floor,
+            7: max_floor,
+            8: description
         }
 
     @property
-    def owner_id(self):
+    def flat_id(self):
         return self.__args[0]
 
     @property
-    def price(self):
+    def owner_id(self):
         return self.__args[1]
 
     @property
-    def square(self):
+    def price(self):
         return self.__args[2]
 
     @property
-    def address(self):
+    def square(self):
         return self.__args[3]
 
     @property
-    def metro(self):
+    def address(self):
         return self.__args[4]
 
     @property
-    def floor(self):
+    def metro(self):
         return self.__args[5]
 
     @property
-    def max_floor(self):
+    def floor(self):
         return self.__args[6]
 
     @property
-    def description(self):
+    def max_floor(self):
         return self.__args[7]
+
+    @property
+    def description(self):
+        return self.__args[8]
 
     def get_params(self):
         return list(self.__args.values())

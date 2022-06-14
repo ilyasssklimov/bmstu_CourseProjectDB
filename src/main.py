@@ -10,6 +10,7 @@ def main():
     sys.path.append('.')
     init_logger()
 
+    SayNoToHostelBot.init_img_directory()
     SayNoToHostelBot.execute_init_files()
     SayNoToHostelBot.set_role(RolesDB.GUEST)
 

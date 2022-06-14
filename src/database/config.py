@@ -17,3 +17,6 @@ DB_ADMIN_PARAMS = {**DB_PARAMS, 'user': 'admin', 'password': 'admin'}
 DB_TABLES_FILE = './query/tables.sql'
 DB_CONSTRAINS_FILE = './query/constrains.sql'
 DB_ROLES_FILE = './query/roles.sql'
+
+
+IMG_PATH = './img'

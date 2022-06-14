@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS public.landlord (
     city VARCHAR(30),
     rating REAL,
     age INTEGER,
-    phone VARCHAR(15)
+    phone VARCHAR(15),
+    username VARCHAR(35)
 );
 
 

@@ -5,14 +5,15 @@ from aiogram.types import InlineKeyboardMarkup
 import logging
 import os
 
-from src.database.config import API_TOKEN, DB_DEFAULT_PARAMS, IMG_PATH
+from src.bot.config import API_TOKEN, IMG_PATH, EntityTypes
+from src.database.config import DB_DEFAULT_PARAMS, RolesDB
 from src.database.database import PostgresDB
 from src.controller.guest import GuestController
 from src.controller.tenant import TenantController
 from src.controller.landlord import LandlordController
 import src.bot.keyboard as kb
 from src.bot.message import MESSAGE_START, MESSAGE_HELP
-from src.bot.states import RegisterTenantStates, RegisterLandlordStates, AddFlatStates, EntityTypes, RolesDB
+from src.bot.states import RegisterTenantStates, RegisterLandlordStates, AddFlatStates
 
 
 class SayNoToHostelBot:

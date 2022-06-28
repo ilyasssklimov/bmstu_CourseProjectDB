@@ -1,8 +1,7 @@
 import logging
 import psycopg2 as ps
 
-from src.bot.states import RolesDB
-from src.database.config import DB_TABLES_FILE, DB_CONSTRAINS_FILE, DB_ROLES_FILE
+from src.database.config import DB_TABLES_FILE, DB_CONSTRAINS_FILE, DB_ROLES_FILE, RolesDB
 
 
 class PostgresDB:

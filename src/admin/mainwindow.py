@@ -5,7 +5,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QTableWidgetItem, QAbstractItemView, QMessageBox
 
 from src.admin.design import Ui_MainWindow
-from src.bot.states import EntityTypes
+from src.bot.config import EntityTypes
 from src.controller.admin import AdminController
 from src.database.config import DB_ADMIN_PARAMS
 from src.database.database import PostgresDB

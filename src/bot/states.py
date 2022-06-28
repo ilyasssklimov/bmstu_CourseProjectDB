@@ -1,4 +1,3 @@
-from enum import Enum
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 
@@ -41,15 +40,3 @@ class AddFlatStates(StatesGroup):
     @classmethod
     def get_states(cls):
         return map(lambda x: x.state, cls.all_states)
-
-
-class EntityTypes(Enum):
-    TENANT = 1
-    LANDLORD = 2
-
-
-class RolesDB(Enum):
-    GUEST = 'guest'
-    TENANT = 'tenant'
-    LANDLORD = 'landlord'
-    ADMIN = 'admin'

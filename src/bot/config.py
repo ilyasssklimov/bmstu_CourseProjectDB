@@ -8,7 +8,7 @@ class EntityTypes(Enum):
     FLAT = 3
 
 
-API_TOKEN = os.getenv('BOT_API')
+API_TOKEN = os.getenv('HOSTEL_TOKEN_API')
 
 LOG_LEVEL = 'INFO'
 LOG_FOLDER = 'log'

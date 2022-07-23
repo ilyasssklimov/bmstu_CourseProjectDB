@@ -3,7 +3,7 @@ from bot.bot import SayNoToHostelBot
 from bot.logger import init_logger
 import sys
 
-from src.bot.states import RolesDB
+from src.database.config import RolesDB
 
 
 def main():

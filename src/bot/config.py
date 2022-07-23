@@ -1,4 +1,5 @@
 from enum import Enum
+import os
 
 
 class EntityTypes(Enum):
@@ -7,8 +8,7 @@ class EntityTypes(Enum):
     FLAT = 3
 
 
-# TODO: move to secrets
-API_TOKEN = '5170014779:AAGPyMd-QuEQge5jdWUwBO6Jg4kg_FcLrQY'
+API_TOKEN = os.getenv('BOT_API')
 
 LOG_LEVEL = 'INFO'
 LOG_FOLDER = 'log'

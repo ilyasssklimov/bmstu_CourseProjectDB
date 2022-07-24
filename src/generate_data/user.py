@@ -2,8 +2,7 @@ from faker import Faker
 from random import randint, choice, uniform
 from src.bot.config import EntityTypes as Types
 from src.database.database import PostgresDB
-
-PHONE_CODE = '+7'
+from src.generate_data.config import PHONE_CODE
 
 
 class GenerateData:

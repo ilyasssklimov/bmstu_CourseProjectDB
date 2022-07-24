@@ -2,6 +2,7 @@ from src.bot.config import EntityTypes as Types
 from src.database.database import PostgresDB
 from src.database.config import DB_ADMIN_PARAMS
 from src.generate_data.user import GenerateData
+from src.generate_data.flat import ParseFlats
 
 
 def main():

@@ -40,7 +40,7 @@ class ParseFlats:
         for flat in soup_flats:
             photo_url = flat.find('div', class_='card-photo__imageWrapper___2tUR3').find_next('div').find('img')['src']
             photo = f'./img/{photo_url.split("/")[-1]}.jpg'
-            urlretrieve(photo_url, f'../img/{photo_url.split("/")[-1]}.jpg')
+            urlretrieve(photo_url, f'.{photo}')
 
             info_block = flat.find('div', class_='long-item-card__information___YXOtb').find('div')
             price = info_block.find('div', class_='long-item-card__informationHeaderLeft___3a-pz').find('span').text
@@ -73,22 +73,15 @@ class ParseFlats:
 
     def add_flats(self, url: str):
         cur_page = 1
+        stop_page = 10
 
         while True:
             flats = self.get_flats(url, cur_page)
             for flat in flats:
-                print(flat['photo'])
                 new_flat = self.__db.add_flat(flat['owner_id'], flat['price'], flat['rooms'], flat['square'],
                                               flat['address'], flat['metro'], flat['floor'], flat['max_floor'],
                                               flat['description'])
                 self.__db.add_photo(new_flat[0], flat['photo'])
+            if cur_page >= stop_page:
+                break
             cur_page += 1
-            break
-
-
-if __name__ == '__main__':
-    sys.path.append('../')
-    _db = PostgresDB(DB_ADMIN_PARAMS)
-
-    parse = ParseFlats(_db)
-    parse.add_flats(MOSCOW_FLATS_URL)

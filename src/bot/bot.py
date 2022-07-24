@@ -312,11 +312,13 @@ async def show_flats(message: types.Message):
         if username:
             info += f' (@{username})'
         info += (f'\nТелефон: {owner.phone}\nЦена: {flat.price} ₽\nПлощадь: {flat.square} м²\nАдрес: {flat.address}'
-                 f'\nБлижайшее метро: {flat.metro}\nЭтаж: {flat.floor}/{flat.max_floor}\nОписание: {flat.description}')
+                 f'\nБлижайшее метро: {flat.metro}\nЭтаж: {flat.floor}/{flat.max_floor}')
 
         if photos[-1:]:
             await SayNoToHostelBot.bot.send_photo(message.chat.id, types.InputFile(photos[-1]), caption=info)
+            await SayNoToHostelBot.bot.send_message(message.chat.id, f'Описание: {flat.description}')
         else:
+            info += f'\nОписание: {flat.description}'
             await SayNoToHostelBot.bot.send_message(message.from_user.id, info)
 
 

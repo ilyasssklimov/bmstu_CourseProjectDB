@@ -15,4 +15,3 @@ LOG_FOLDER = 'log'
 LOG_NAME_FILE = 'bot.log'
 
 IMG_PATH = './img'
-

@@ -5,7 +5,7 @@ from src.database.config import DB_TABLES_FILE, DB_CONSTRAINS_FILE, DB_ROLES_FIL
 
 
 class PostgresDB:
-    def __init__(self, db_params: dict):
+    def __init__(self, db_params: dict[str, str]):
         self.__connection = None
         self.__cursor = None
         self.connect_db(db_params)
@@ -15,7 +15,7 @@ class PostgresDB:
         self.execute_file(DB_CONSTRAINS_FILE)
         self.execute_file(DB_ROLES_FILE)
 
-    def connect_db(self, db_params: dict):
+    def connect_db(self, db_params: dict[str, str]):
         self.__connection = ps.connect(**db_params)
         self.__cursor = self.__connection.cursor()
 

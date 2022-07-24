@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.flat (
     price INTEGER,
     rooms INTEGER,
     square REAL,
-    address VARCHAR(100),
+    address VARCHAR(200),
     metro VARCHAR(30),
     floor INTEGER,
     max_floor INTEGER,

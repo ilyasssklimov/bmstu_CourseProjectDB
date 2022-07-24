@@ -136,11 +136,11 @@ class PostgresDB:
         return bool(landlords)
 
     # flat methods
-    def add_flat(self, owner_id: int, price: int, square: float, address: str, metro: str,
-                 floor: int, max_floor: int, description: int):
+    def add_flat(self, owner_id: int, price: int, rooms: int, square: float, address: str, metro: str,
+                 floor: int, max_floor: int, description: str):
         query = f'''
-        INSERT INTO public.flat (owner_id, price, square, address, metro, floor, max_floor, description)
-        VALUES ({owner_id}, {price}, {square}, '{address}', '{metro}', {floor}, {max_floor}, '{description}')
+        INSERT INTO public.flat (owner_id, price, rooms, square, address, metro, floor, max_floor, description)
+        VALUES ({owner_id}, {price}, {rooms}, {square}, '{address}', '{metro}', {floor}, {max_floor}, '{description}')
         '''
         self.execute(query)
         logging.info(f'Flat with owner_id \'{owner_id}\' is successfully added')

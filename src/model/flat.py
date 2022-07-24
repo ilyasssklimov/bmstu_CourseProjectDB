@@ -1,16 +1,17 @@
 class Flat:
-    def __init__(self, flat_id=-1, owner_id=-1, price=-1, square=-1, address='', metro='',
+    def __init__(self, flat_id=-1, owner_id=-1, price=-1, rooms=-1, square=-1, address='', metro='',
                  floor=-1, max_floor=-1, description=''):
         self.__args = {
             0: flat_id,
             1: owner_id,
             2: price,
-            3: square,
-            4: address,
-            5: metro,
-            6: floor,
-            7: max_floor,
-            8: description
+            3: rooms,
+            4: square,
+            5: address,
+            6: metro,
+            7: floor,
+            8: max_floor,
+            9: description
         }
 
     @property
@@ -26,55 +27,62 @@ class Flat:
         return self.__args[2]
 
     @property
-    def square(self):
+    def rooms(self):
         return self.__args[3]
 
     @property
-    def address(self):
+    def square(self):
         return self.__args[4]
 
     @property
-    def metro(self):
+    def address(self):
         return self.__args[5]
 
     @property
-    def floor(self):
+    def metro(self):
         return self.__args[6]
 
     @property
-    def max_floor(self):
+    def floor(self):
         return self.__args[7]
 
     @property
-    def description(self):
+    def max_floor(self):
         return self.__args[8]
+
+    @property
+    def description(self):
+        return self.__args[9]
 
     def get_params(self):
         return list(self.__args.values())
 
     def set_owner_id(self, value):
-        self.__args[0] = value
-
-    def set_price(self, value):
         self.__args[1] = value
 
-    def set_square(self, value):
+    def set_price(self, value):
         self.__args[2] = value
 
-    def set_address(self, value):
+    def set_rooms(self, value):
         self.__args[3] = value
 
-    def set_metro(self, value):
+    def set_square(self, value):
         self.__args[4] = value
 
-    def set_floor(self, value):
+    def set_address(self, value):
         self.__args[5] = value
 
-    def set_max_floor(self, value):
+    def set_metro(self, value):
         self.__args[6] = value
 
-    def set_description(self, value):
+    def set_floor(self, value):
         self.__args[7] = value
+
+    def set_max_floor(self, value):
+        self.__args[8] = value
+
+    def set_description(self, value):
+        self.__args[9] = value
 
     def __getitem__(self, item):
         if item in self.__args:
@@ -95,6 +103,8 @@ class Flat:
         return (
             self.owner_id == other.owner_id and
             self.price == other.price and
+            self.rooms == other.rooms and
+            self.square == other.square and
             self.address == other.address and
             self.metro == other.metro and
             self.floor == other.floor and
@@ -103,8 +113,10 @@ class Flat:
         )
 
     def __str__(self):
-        return f'Flat (id = {self.__args[0]}, price = {self.__args[1]}, address = {self.__args[2]}, ' \
-               f'metro = {self.__args[3]}, floor = {self.__args[4]} / {self.__args[5]} ,description = {self.__args[6]})'
+        return f'Flat (id = {self.__args[0]}, owner_id = {self.__args[1]}, price = {self.__args[2]}, ' \
+               f'rooms = {self.__args[3]}, square = {self.__args[4]}, address = {self.__args[5]},' \
+               f' metro = {self.__args[6]}, floor = {self.__args[7]} / {self.__args[8]}, ' \
+               f'description = {self.__args[9]})'
 
     def __repr__(self):
         return str(self)

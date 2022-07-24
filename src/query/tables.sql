@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS public.flat (
     id SERIAL,
     owner_id INTEGER,
     price INTEGER,
+    rooms INTEGER,
     square REAL,
     address VARCHAR(100),
     metro VARCHAR(30),
@@ -42,5 +43,5 @@ CREATE TABLE IF NOT EXISTS public.flat (
 -- create table public.flat_photo
 CREATE TABLE IF NOT EXISTS public.flat_photo (
     flat_id INTEGER,
-    photo VARCHAR(100)
+    photo VARCHAR(200)
 );

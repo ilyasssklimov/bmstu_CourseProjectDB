@@ -122,6 +122,12 @@ SELECT public.create_constraint(
 
 SELECT public.create_constraint(
     'flat',
+    'flat_rooms_check',
+    'ALTER TABLE public.flat ADD CONSTRAINT flat_rooms_check CHECK (rooms > 0 AND rooms IS NOT NULL);'
+);
+
+SELECT public.create_constraint(
+    'flat',
     'flat_square_check',
     'ALTER TABLE public.flat ADD CONSTRAINT flat_square_check CHECK (square > 0 AND square IS NOT NULL);'
 );

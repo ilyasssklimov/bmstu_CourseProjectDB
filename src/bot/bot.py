@@ -63,6 +63,10 @@ class SayNoToHostelBot:
         if not os.path.exists(IMG_PATH):
             os.makedirs(IMG_PATH)
 
+    @classmethod
+    def close_db(cls):
+        cls.database.close_connection()
+
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='start')
 async def send_welcome(message: types.Message):

@@ -15,6 +15,7 @@ def main():
     SayNoToHostelBot.set_role(RolesDB.GUEST)
 
     executor.start_polling(SayNoToHostelBot.dispatcher, skip_updates=True)
+    SayNoToHostelBot.close_db()
 
 
 if __name__ == '__main__':

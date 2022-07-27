@@ -2,7 +2,7 @@ import copy
 import logging
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QTableWidgetItem, QAbstractItemView, QMessageBox
-from src.admin.design import Ui_MainWindow
+from src.admin_panel.design import Ui_MainWindow
 from src.bot.config import EntityTypes
 from src.controller.admin import AdminController
 from src.database.config import DB_ADMIN_PARAMS

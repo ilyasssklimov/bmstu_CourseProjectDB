@@ -74,3 +74,15 @@ def get_add_flat_keyboard():
     add_flat_keyboard.add(exit_btn)
 
     return add_flat_keyboard
+
+
+def get_pagination_keyboard():
+    pagination_keyboard = InlineKeyboardMarkup()
+    left_btn = InlineKeyboardButton('<<', callback_data='pagination_left')
+    right_btn = InlineKeyboardButton('>>', callback_data='pagination_right')
+    cancel_btn = InlineKeyboardButton('Отменить', callback_data='pagination_cancel')
+
+    pagination_keyboard.row(left_btn, right_btn)
+    pagination_keyboard.add(cancel_btn)
+
+    return pagination_keyboard

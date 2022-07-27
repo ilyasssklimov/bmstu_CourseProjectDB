@@ -40,3 +40,18 @@ class AddFlatStates(StatesGroup):
     @classmethod
     def get_states(cls):
         return map(lambda x: x.state, cls.all_states)
+
+
+class PaginationStates(StatesGroup):
+    START_STATE = State()
+    PRICE_STATE = State()
+    SQUARE_STATE = State()
+    ADDRESS_STATE = State()
+    METRO_STATE = State()
+    FLOOR_STATE = State()
+    DESCRIPTION_STATE = State()
+    PHOTO_STATE = State()
+
+    @classmethod
+    def get_states(cls):
+        return map(lambda x: x.state, cls.all_states)

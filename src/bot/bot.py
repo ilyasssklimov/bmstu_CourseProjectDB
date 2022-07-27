@@ -303,6 +303,7 @@ async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext)
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_flats')
 async def show_flats(message: types.Message):
     flats, flat_photos = SayNoToHostelBot.controller.get_flats()
+    last_message = None
     for flat, photos in zip(flats, flat_photos):
         if photos[:-1]:
             media = types.MediaGroup()
@@ -320,10 +321,16 @@ async def show_flats(message: types.Message):
 
         if photos[-1:]:
             await SayNoToHostelBot.bot.send_photo(message.chat.id, types.InputFile(photos[-1]), caption=info)
-            await SayNoToHostelBot.bot.send_message(message.chat.id, f'Описание: {flat.description}')
+            last_message = await SayNoToHostelBot.bot.send_message(message.chat.id, f'Описание: {flat.description}')
         else:
             info += f'\nОписание: {flat.description}'
-            await SayNoToHostelBot.bot.send_message(message.from_user.id, info)
+            last_message = await SayNoToHostelBot.bot.send_message(message.from_user.id, info)
+
+    # await RegisterTenantStates.SEX_STATE.set()
+    # await SayNoToHostelBot.bot.send_message(message.from_user.id, '=' * 10,
+    #                                                   reply_markup=kb.get_pagination_keyboard())
+    if last_message:
+        await last_message.edit_reply_markup(reply_markup=kb.get_pagination_keyboard())
 
 
 async def add_flat_form(user_id: int):
@@ -332,7 +339,7 @@ async def add_flat_form(user_id: int):
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='add_flat')
-async def add_flat(message: types.Message, state: FSMContext):
+async def add_flat_start(message: types.Message, state: FSMContext):
     if SayNoToHostelBot.role != RolesDB.LANDLORD:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы '
                                                                       'как арендодатель')
@@ -344,7 +351,7 @@ async def add_flat(message: types.Message, state: FSMContext):
 
 
 @SayNoToHostelBot.dispatcher.callback_query_handler(state=AddFlatStates.START_STATE, text_contains='add_flat')
-async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext):
+async def add_flat(callback_query: types.CallbackQuery, state: FSMContext):
     match callback_query.data:
         case 'add_flat_price':
             await AddFlatStates.PRICE_STATE.set()

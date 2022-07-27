@@ -2,16 +2,14 @@ import logging
 import os
 import random
 import re
-import sys
-
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver import DesiredCapabilities
 from urllib.request import urlretrieve
 
-from src.database.config import DB_ADMIN_PARAMS
+from src.bot.config import IMG_PATH
 from src.database.database import PostgresDB
-from src.generate_data.config import MOSCOW_FLATS_URL, ERROR_504, IMG_PATH
+from src.generate_data.config import ERROR_504, RELATIVE_IMG_PATH
 
 
 class ParseFlats:
@@ -39,8 +37,9 @@ class ParseFlats:
         flats = []
         for flat in soup_flats:
             photo_url = flat.find('div', class_='card-photo__imageWrapper___2tUR3').find_next('div').find('img')['src']
-            photo = f'./img/{photo_url.split("/")[-1]}.jpg'
-            urlretrieve(photo_url, f'.{photo}')
+            photo_name = f'{photo_url.split("/")[-1]}.jpg'
+            photo = os.path.join(IMG_PATH, photo_name)
+            urlretrieve(photo_url, os.path.join(RELATIVE_IMG_PATH, photo_name))
 
             info_block = flat.find('div', class_='long-item-card__information___YXOtb').find('div')
             price = info_block.find('div', class_='long-item-card__informationHeaderLeft___3a-pz').find('span').text

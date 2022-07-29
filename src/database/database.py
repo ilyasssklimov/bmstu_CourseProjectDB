@@ -1,6 +1,5 @@
 import logging
 import psycopg2 as ps
-
 from src.database.config import DB_TABLES_FILE, DB_CONSTRAINS_FILE, DB_ROLES_FILE, RolesDB
 
 
@@ -10,6 +9,10 @@ class PostgresDB:
         self.__cursor = None
         self.connect_db(db_params)
 
+    def __del__(self):
+        self.__cursor.close()
+        self.__connection.close()
+
     def execute_init_files(self):
         self.execute_file(DB_TABLES_FILE)
         self.execute_file(DB_CONSTRAINS_FILE)
@@ -18,10 +21,6 @@ class PostgresDB:
     def connect_db(self, db_params: dict[str, str]):
         self.__connection = ps.connect(**db_params)
         self.__cursor = self.__connection.cursor()
-
-    def close_connection(self):
-        self.__cursor.close()
-        self.__connection.close()
 
     def set_role(self, role: RolesDB):
         query = f'SET ROLE {role.value}'

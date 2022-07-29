@@ -1,14 +1,14 @@
 from aiogram import executor
-from bot.bot import SayNoToHostelBot
-from bot.logger import init_logger
 import sys
-
+from bot.bot import SayNoToHostelBot
+from src.logger.logger import init_logger
+from src.logger.config import TargetType
 from src.database.config import RolesDB
 
 
 def main():
     sys.path.append('.')
-    init_logger()
+    init_logger(TargetType.BOT)
 
     SayNoToHostelBot.init_img_directory()
     SayNoToHostelBot.execute_init_files()

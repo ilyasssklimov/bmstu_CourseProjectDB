@@ -3,53 +3,65 @@ import logging
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QTableWidgetItem, QAbstractItemView, QMessageBox
 from src.admin_panel.design import Ui_MainWindow
-from src.bot.config import EntityTypes
+from src.bot.config import EntityType as EType
 from src.controller.admin import AdminController
 from src.database.config import DB_ADMIN_PARAMS
 from src.database.database import PostgresDB
+from src.generate_data.config import MOSCOW_FLATS_URL
+from src.generate_data.flat import ParseFlats
+from src.generate_data.user import GenerateData
 from src.model.tenant import Tenant
 from src.model.landlord import Landlord
+from src.model.flat import Flat
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-        self.viewTable = None
-        self.data = []
-        self.upd_data = []
+        self.cur_table: EType = EType.NO_TYPE
+        self.data: list[Tenant | Landlord | Flat] = []
+        self.upd_data: list[Tenant | Landlord | Flat] = []
 
-        db = PostgresDB(DB_ADMIN_PARAMS)
-        self.controller = AdminController(db)
+        self.__db = PostgresDB(DB_ADMIN_PARAMS)
+        self.controller = AdminController(self.__db)
 
         self.get_funcs = {
-            EntityTypes.TENANT: self.controller.get_tenants,
-            EntityTypes.LANDLORD: self.controller.get_landlords
+            EType.TENANT: self.controller.get_tenants,
+            EType.LANDLORD: self.controller.get_landlords,
+            EType.FLAT: self.controller.get_flats
         }
         self.del_funcs = {
-            EntityTypes.TENANT: self.controller.delete_tenant,
-            EntityTypes.LANDLORD: self.controller.delete_landlord
+            EType.TENANT: self.controller.delete_tenant,
+            EType.LANDLORD: self.controller.delete_landlord
         }
 
         self.table.itemChanged.connect(self.change_item)
+        self.addBtn.clicked.connect(self.add_row)
+        self.delBtn.clicked.connect(self.delete_row)
 
-        self.tenantGetBtn.clicked.connect(lambda: self.get_entities(EntityTypes.TENANT))
-        self.tenantAddBtn.clicked.connect(lambda: self.add_row(EntityTypes.TENANT))
-        self.tenantDelBtn.clicked.connect(lambda: self.delete_row(EntityTypes.TENANT))
+        self.tenantGetBtn.clicked.connect(lambda: self.get_entities(EType.TENANT))
         self.tenantSavBtn.clicked.connect(self.save_tenant_changes)
 
-        self.landlordGetBtn.clicked.connect(lambda: self.get_entities(EntityTypes.LANDLORD))
-        self.landlordAddBtn.clicked.connect(lambda: self.add_row(EntityTypes.LANDLORD))
-        self.landlordDelBtn.clicked.connect(lambda: self.delete_row(EntityTypes.LANDLORD))
+        self.landlordGetBtn.clicked.connect(lambda: self.get_entities(EType.LANDLORD))
         self.landlordSavBtn.clicked.connect(self.save_landlord_changes)
+
+        self.flatGetBtn.clicked.connect(lambda: self.get_entities(EType.FLAT))
+
+        self.tenantGenBtn.clicked.connect(lambda: self.generate_data(EType.TENANT))
+        self.landlordGenBtn.clicked.connect(lambda: self.generate_data(EType.LANDLORD))
+        self.flatGenBtn.clicked.connect(lambda: self.generate_data(EType.FLAT))
+
+    def __del__(self):
+        del self.__db
 
     def change_item(self, item):
         self.upd_data[item.row()][item.column()] = item.text()
 
-    def get_entities(self, entity_type: EntityTypes):
+    def get_entities(self, entity_type: EType):
         self.data = []
         self.upd_data = []
-        self.viewTable = entity_type
+        self.cur_table = entity_type
 
         headers, entities = self.get_funcs[entity_type]()
         self.table.setColumnCount(len(headers))
@@ -64,22 +76,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
 
-    def add_row(self, entity_type: EntityTypes):
-        if entity_type != self.viewTable:
+    def add_row(self):
+        if not self.cur_table:
             return
 
         self.table.setRowCount(self.table.rowCount() + 1)
-        if self.viewTable == EntityTypes.TENANT:
+        if self.cur_table == EType.TENANT:
             self.upd_data.append(Tenant())
-        elif self.viewTable == EntityTypes.LANDLORD:
+        elif self.cur_table == EType.LANDLORD:
             self.upd_data.append(Landlord())
 
-    def delete_row(self, entity_type: EntityTypes):
-        if entity_type != self.viewTable:
-            return
-
+    def delete_row(self, entity_type: EType):
         row = self.table.currentRow()
-        if self.viewTable != entity_type or row == -1:
+        if not self.cur_table or row == -1:
             return
         ans = QMessageBox.question(self, 'Удаление строки',
                                    f'Вы уверены, что хотите удалить строку с индексом {row + 1}?',
@@ -98,8 +107,31 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.table.removeRow(row)
                 self.upd_data.pop(row)
 
+    def generate_data(self, entity_type: EType):
+        if entity_type == EType.TENANT or entity_type == EType.LANDLORD:
+            try:
+                n = int(self.tenantLinEdit.text()) if entity_type == EType.TENANT else int(self.landlordLinEdit.text())
+                assert n > 0
+            except (ValueError, AssertionError):
+                QMessageBox.about(self, 'Ошибка', 'Количество пользователей должно быть положительным целым числом')
+            else:
+                generate = GenerateData(self.__db)
+                generate.generate_users(entity_type, n)
+                QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {n} пользователей')
+        elif entity_type == EType.FLAT:
+            try:
+                n = int(self.flatLinEdit.text())
+                assert n > 0
+            except (ValueError, AssertionError):
+                QMessageBox.about(self, 'Ошибка', 'Количество квартир должно быть целым положительным числом')
+            else:
+                parse = ParseFlats(self.__db)
+                parse.add_flats(MOSCOW_FLATS_URL, n)
+                del parse
+                QMessageBox.about(self, 'Успех', f'Вы успешно спарсили {n} квартир')
+
     def save_tenant_changes(self):
-        if self.viewTable != EntityTypes.TENANT:
+        if self.cur_table != EType.TENANT:
             return
 
         for tenant, tenant_upd in zip(self.data, self.upd_data):
@@ -139,7 +171,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     self.data.append(self.upd_data[i])
 
     def save_landlord_changes(self):
-        if self.viewTable != EntityTypes.LANDLORD:
+        if self.cur_table != EType.LANDLORD:
             return
 
         for landlord, landlord_upd in zip(self.data, self.upd_data):

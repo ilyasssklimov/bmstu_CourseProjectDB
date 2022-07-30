@@ -18,50 +18,50 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>20</y>
+      <y>80</y>
       <width>261</width>
-      <height>41</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>11</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
      <string>Получить арендаторов</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="tenantAddBtn">
+   <widget class="QPushButton" name="addBtn">
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>60</y>
-      <width>91</width>
-      <height>41</height>
+      <y>20</y>
+      <width>131</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>9</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
      <string>Добавить</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="tenantDelBtn">
+   <widget class="QPushButton" name="delBtn">
     <property name="geometry">
      <rect>
-      <x>1100</x>
-      <y>60</y>
-      <width>91</width>
-      <height>41</height>
+      <x>1140</x>
+      <y>20</y>
+      <width>131</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>9</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
@@ -71,15 +71,15 @@
    <widget class="QPushButton" name="tenantSavBtn">
     <property name="geometry">
      <rect>
-      <x>1190</x>
-      <y>60</y>
-      <width>81</width>
-      <height>41</height>
+      <x>1010</x>
+      <y>110</y>
+      <width>261</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>9</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
@@ -100,14 +100,14 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>120</y>
+      <y>190</y>
       <width>261</width>
-      <height>41</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>11</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
@@ -117,55 +117,172 @@
    <widget class="QPushButton" name="landlordSavBtn">
     <property name="geometry">
      <rect>
-      <x>1190</x>
-      <y>160</y>
-      <width>81</width>
-      <height>41</height>
+      <x>1010</x>
+      <y>220</y>
+      <width>261</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>9</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
      <string>Сохранить</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="landlordDelBtn">
+   <widget class="QPushButton" name="tenantGenBtn">
     <property name="geometry">
      <rect>
       <x>1100</x>
-      <y>160</y>
-      <width>91</width>
-      <height>41</height>
+      <y>140</y>
+      <width>171</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>9</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
-     <string>Удалить</string>
+     <string>Сгенерировать</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="landlordAddBtn">
+   <widget class="QPushButton" name="landlordGenBtn">
+    <property name="geometry">
+     <rect>
+      <x>1100</x>
+      <y>250</y>
+      <width>171</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Сгенерировать</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="tenantLinEdit">
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>160</y>
+      <y>140</y>
       <width>91</width>
-      <height>41</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>9</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
-     <string>Добавить</string>
+     <string>100</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="landlordLinEdit">
+    <property name="geometry">
+     <rect>
+      <x>1010</x>
+      <y>250</y>
+      <width>91</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>100</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="flatLinEdit">
+    <property name="geometry">
+     <rect>
+      <x>1010</x>
+      <y>360</y>
+      <width>91</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>100</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="flatGetBtn">
+    <property name="geometry">
+     <rect>
+      <x>1010</x>
+      <y>300</y>
+      <width>261</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Получить квартиры</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="flatSavBtn">
+    <property name="geometry">
+     <rect>
+      <x>1010</x>
+      <y>330</y>
+      <width>261</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Сохранить</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="flatGenBtn">
+    <property name="geometry">
+     <rect>
+      <x>1100</x>
+      <y>360</y>
+      <width>171</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Спарсить</string>
     </property>
    </widget>
   </widget>

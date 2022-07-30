@@ -4,8 +4,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup
 import logging
 import os
-
-from src.bot.config import API_TOKEN, IMG_PATH, EntityTypes
+from src.bot.config import API_TOKEN, IMG_PATH, EntityType as EType
 from src.database.config import DB_DEFAULT_PARAMS, RolesDB
 from src.database.database import PostgresDB
 from src.controller.guest import GuestController
@@ -65,7 +64,7 @@ class SayNoToHostelBot:
 
     @classmethod
     def close_db(cls):
-        cls.database.close_connection()
+        del cls.database
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='start')
@@ -209,14 +208,14 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
 
-async def input_register_str(message: types.Message, state: FSMContext, field: str, user: EntityTypes):
+async def input_register_str(message: types.Message, state: FSMContext, field: str, user: EType):
     async with state.proxy() as data:
         data[field] = message.text
 
-    if user == EntityTypes.TENANT:
+    if user == EType.TENANT:
         await RegisterTenantStates.START_STATE.set()
         await register_form(message.from_user.id, kb.get_register_tenant_keyboard())
-    elif user == EntityTypes.LANDLORD:
+    elif user == EType.LANDLORD:
         await RegisterLandlordStates.START_STATE.set()
         await register_form(message.from_user.id, kb.get_register_landlord_keyboard())
 
@@ -224,22 +223,22 @@ async def input_register_str(message: types.Message, state: FSMContext, field: s
 @SayNoToHostelBot.dispatcher.message_handler(state=[RegisterTenantStates.NAME_STATE, RegisterLandlordStates.NAME_STATE])
 async def input_name(message: types.Message, state: FSMContext):
     if await state.get_state() == RegisterTenantStates.NAME_STATE.state:
-        await input_register_str(message, state, 'name', EntityTypes.TENANT)
+        await input_register_str(message, state, 'name', EType.TENANT)
     elif await state.get_state() == RegisterLandlordStates.NAME_STATE.state:
-        await input_register_str(message, state, 'name', EntityTypes.LANDLORD)
+        await input_register_str(message, state, 'name', EType.LANDLORD)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=[RegisterTenantStates.CITY_STATE, RegisterLandlordStates.CITY_STATE])
 async def input_city(message: types.Message, state: FSMContext):
     if await state.get_state() == RegisterTenantStates.CITY_STATE.state:
-        await input_register_str(message, state, 'city', EntityTypes.TENANT)
+        await input_register_str(message, state, 'city', EType.TENANT)
     elif await state.get_state() == RegisterLandlordStates.CITY_STATE.state:
-        await input_register_str(message, state, 'city', EntityTypes.LANDLORD)
+        await input_register_str(message, state, 'city', EType.LANDLORD)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=RegisterTenantStates.QUALITIES_STATE)
 async def input_qualities(message: types.Message, state: FSMContext):
-    await input_register_str(message, state, 'qualities', EntityTypes.TENANT)
+    await input_register_str(message, state, 'qualities', EType.TENANT)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=RegisterLandlordStates.PHONE_STATE)
@@ -250,7 +249,7 @@ async def input_phone(message: types.Message, state: FSMContext):
         await RegisterLandlordStates.START_STATE.set()
         await register_form(message.from_user.id, kb.get_register_landlord_keyboard())
     else:
-        await input_register_str(message, state, 'phone', EntityTypes.LANDLORD)
+        await input_register_str(message, state, 'phone', EType.LANDLORD)
 
 
 @SayNoToHostelBot.dispatcher.callback_query_handler(state=RegisterTenantStates.SEX_STATE, text_contains='sex')

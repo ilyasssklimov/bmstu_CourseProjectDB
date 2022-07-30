@@ -6,10 +6,9 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver import DesiredCapabilities
 from urllib.request import urlretrieve
-
 from src.bot.config import IMG_PATH
 from src.database.database import PostgresDB
-from src.generate_data.config import ERROR_504, RELATIVE_IMG_PATH
+from src.generate_data.config import ERROR_504
 
 
 class ParseFlats:
@@ -37,9 +36,8 @@ class ParseFlats:
         flats = []
         for flat in soup_flats:
             photo_url = flat.find('div', class_='card-photo__imageWrapper___2tUR3').find_next('div').find('img')['src']
-            photo_name = f'{photo_url.split("/")[-1]}.jpg'
-            photo = os.path.join(IMG_PATH, photo_name)
-            urlretrieve(photo_url, os.path.join(RELATIVE_IMG_PATH, photo_name))
+            photo = os.path.join(IMG_PATH, f'{photo_url.split("/")[-1]}.jpg')
+            urlretrieve(photo_url, photo)
 
             info_block = flat.find('div', class_='long-item-card__information___YXOtb').find('div')
             price = info_block.find('div', class_='long-item-card__informationHeaderLeft___3a-pz').find('span').text
@@ -66,21 +64,32 @@ class ParseFlats:
                     'owner_id': random.choice(self.__owner_ids)
                 })
             except TypeError:
-                logging.error(f'Unable to get flat with title \'{place}\'')
+                logging.debug(f'Unable to get flat with title \'{place}\'')
 
         return flats
 
-    def add_flats(self, url: str):
-        cur_page = 1
-        stop_page = 10
+    def add_flats(self, url: str, n: int = 100):
+        if n <= 0:
+            return
 
-        while True:
+        cur_page = 1
+        count_flats = 0
+        parsing = True
+
+        while parsing:
+            logging.info(f'Parsing page {cur_page}...')
             flats = self.get_flats(url, cur_page)
+            parsing = bool(flats)
+
             for flat in flats:
+                parsing = count_flats < n
+                if not parsing:
+                    break
+
                 new_flat = self.__db.add_flat(flat['owner_id'], flat['price'], flat['rooms'], flat['square'],
                                               flat['address'], flat['metro'], flat['floor'], flat['max_floor'],
                                               flat['description'])
                 self.__db.add_photo(new_flat[0], flat['photo'])
-            if cur_page >= stop_page:
-                break
+                count_flats += 1
+
             cur_page += 1

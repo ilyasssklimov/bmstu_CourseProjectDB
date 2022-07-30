@@ -1,9 +1,9 @@
 import logging
 import psycopg2 as ps
-
 from src.database.database import PostgresDB
-from src.model.tenant import Tenant
+from src.model.flat import Flat
 from src.model.landlord import Landlord
+from src.model.tenant import Tenant
 
 
 class AdminController:
@@ -93,3 +93,10 @@ class AdminController:
             logging.error(f'Some error while updating landlord with name \'{landlord.full_name}\'')
 
         return Landlord()
+
+    # flat methods
+    def get_flats(self):
+        headers = ['id', 'owner_id', 'price', 'rooms', 'square', 'address',
+                   'metro', 'floor', 'max_floor', 'description']
+        flats = [Flat(*flat) for flat in self.__db.get_flats()]
+        return headers, flats

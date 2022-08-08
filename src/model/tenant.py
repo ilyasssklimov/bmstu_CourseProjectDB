@@ -85,8 +85,12 @@ class Tenant:
             self.city == other.city and
             self.qualities == other.qualities and
             self.age == other.age and
-            ((not self.solvency and other.solvency == 'null') or str(self.solvency).lower() == other.solvency.lower())
+            ((not self.solvency and other.solvency == 'null') or
+             str(self.solvency).lower() == str(other.solvency).lower())
         )
+
+    def __ne__(self, other):
+        return not self == other
 
     def __str__(self):
         return f'Tenant (id = {self.__args[0]}, full_name = {self.__args[1]}, sex = {self.__args[2]}, city = ' \

@@ -107,21 +107,22 @@ class PostgresDB:
         logging.info('Get all landlords from DB')
         return self.select(query)
 
-    def get_landlord(self, landlord_id):
+    def get_landlord(self, landlord_id: int):
         query = f'''SELECT * FROM public.landlord WHERE id = {landlord_id}'''
         logging.info(f'Get landlord with id = {landlord_id}')
         return self.select(query)[0]
 
-    def update_landlord(self, landlord_id: int, full_name: str, city: str, rating: float, age: int):
+    def update_landlord(self, landlord_id: int, full_name: str, city: str, rating: float, age: int,
+                        phone: str, username: str):
         query = f'''
-        UPDATE public.landlord SET full_name = '{full_name}', city = '{city}', rating = {rating}, age = {age} 
-        WHERE id = {landlord_id}
+        UPDATE public.landlord SET full_name = '{full_name}', city = '{city}', rating = {rating}, age = {age},
+        phone = '{phone}', username = '{username}' WHERE id = {landlord_id}
         '''
         logging.info(f'Update landlord with name = \'{full_name}\'')
         self.execute(query)
         return landlord_id, full_name, city, rating, age
 
-    def delete_landlord(self, landlord_id):
+    def delete_landlord(self, landlord_id: int):
         query = f'''DELETE FROM public.landlord WHERE id = {landlord_id};'''
         landlord = self.get_landlord(landlord_id)
         self.execute(query)
@@ -131,7 +132,7 @@ class PostgresDB:
     def check_landlord(self, landlord_id: int):
         query = f'''SELECT * FROM public.landlord WHERE id = {landlord_id}'''
         landlords = self.select(query)
-        logging.info('Checking landlords')
+        logging.info('Checking landlord')
         return bool(landlords)
 
     # flat methods
@@ -157,7 +158,39 @@ class PostgresDB:
         logging.info(f'Add photo to flat with id \'{flat_id}\'')
         return photo
 
-    def get_flat_photos(self, flat_id: int):
+    def delete_photos(self, flat_id: int):
+        query = f'''DELETE FROM public.flat_photo WHERE flat_id = {flat_id}'''
+        photos = self.get_photos(flat_id)
+        self.execute(query)
+        logging.info(f'Delete photos of flat with id = {flat_id}')
+        return photos
+
+    def get_photos(self, flat_id: int):
         query = f'''SELECT photo FROM public.flat_photo WHERE flat_id = {flat_id}'''
         logging.info(f'Get photos of flat with id \'{flat_id}\'')
         return [photo[0] for photo in self.select(query)]
+
+    def get_flat(self, flat_id: int):
+        query = f'''SELECT * FROM public.flat WHERE id = {flat_id}'''
+        logging.info(f'Get flat with id = {flat_id}')
+        return self.select(query)[0]
+
+    def delete_flat(self, flat_id: int):
+        query = f'''DELETE FROM public.flat WHERE id = {flat_id};'''
+        flat = self.get_flat(flat_id)
+        photos = self.delete_photos(flat_id)
+        self.execute(query)
+        logging.info(f'Delete flat with id = {flat_id}')
+        return flat, photos
+
+    def update_flat(self, flat_id: int, owner_id: int, price: int, rooms: int, square: float, address: str, metro: str,
+                    floor: int, max_floor: int, description: str):
+        query = f'''
+        UPDATE public.flat SET owner_id = {owner_id}, price = {price}, rooms = {rooms}, square = {square}, 
+                               address = '{address}', metro = '{metro}', floor = {floor}, max_floor = {max_floor},
+                               description = '{description}' 
+        WHERE id = {flat_id}
+        '''
+        self.execute(query)
+        logging.info(f'Update flat with id = \'{flat_id}\'')
+        return flat_id, owner_id, price, rooms, square, address, metro, floor, max_floor, description

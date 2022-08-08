@@ -19,12 +19,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-        self.cur_table: EType = EType.NO_TYPE
+        self.cur_entity: EType = EType.NO_TYPE
         self.data: list[Tenant | Landlord | Flat] = []
         self.upd_data: list[Tenant | Landlord | Flat] = []
 
         self.__db = PostgresDB(DB_ADMIN_PARAMS)
-        self.controller = AdminController(self.__db)
+        self.controller: AdminController = AdminController(self.__db)
 
         self.get_funcs = {
             EType.TENANT: self.controller.get_tenants,
@@ -33,7 +33,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         }
         self.del_funcs = {
             EType.TENANT: self.controller.delete_tenant,
-            EType.LANDLORD: self.controller.delete_landlord
+            EType.LANDLORD: self.controller.delete_landlord,
+            EType.FLAT: self.controller.delete_flat
         }
 
         self.table.itemChanged.connect(self.change_item)
@@ -47,6 +48,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.landlordSavBtn.clicked.connect(self.save_landlord_changes)
 
         self.flatGetBtn.clicked.connect(lambda: self.get_entities(EType.FLAT))
+        self.flatSavBtn.clicked.connect(self.save_flat_changes)
 
         self.tenantGenBtn.clicked.connect(lambda: self.generate_data(EType.TENANT))
         self.landlordGenBtn.clicked.connect(lambda: self.generate_data(EType.LANDLORD))
@@ -61,7 +63,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def get_entities(self, entity_type: EType):
         self.data = []
         self.upd_data = []
-        self.cur_table = entity_type
+        self.cur_entity = entity_type
 
         headers, entities = self.get_funcs[entity_type]()
         self.table.setColumnCount(len(headers))
@@ -75,27 +77,32 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.table.setItem(row, column,  QTableWidgetItem(str(entity[column])))
 
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.scrollToTop()
 
     def add_row(self):
-        if not self.cur_table:
+        if not self.cur_entity:
             return
 
         self.table.setRowCount(self.table.rowCount() + 1)
-        if self.cur_table == EType.TENANT:
+        if self.cur_entity == EType.TENANT:
             self.upd_data.append(Tenant())
-        elif self.cur_table == EType.LANDLORD:
+        elif self.cur_entity == EType.LANDLORD:
             self.upd_data.append(Landlord())
+        elif self.cur_entity == EType.FLAT:
+            self.upd_data.append(Flat())
+        self.table.scrollToBottom()
 
-    def delete_row(self, entity_type: EType):
+    def delete_row(self):
         row = self.table.currentRow()
-        if not self.cur_table or row == -1:
+        if self.cur_entity == EType.NO_TYPE or row == -1:
             return
+
         ans = QMessageBox.question(self, 'Удаление строки',
                                    f'Вы уверены, что хотите удалить строку с индексом {row + 1}?',
                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if ans == QMessageBox.Yes:
             try:
-                if self.del_funcs[entity_type](self.data[row].id):
+                if self.del_funcs[self.cur_entity](self.data[row].id):
                     self.table.removeRow(row)
                     self.data.pop(row)
                     self.upd_data.pop(row)
@@ -108,6 +115,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.upd_data.pop(row)
 
     def generate_data(self, entity_type: EType):
+        if entity_type == EType.NO_TYPE:
+            return
+
+        ans = QMessageBox.question(self, 'Генерация данных', f'Вы уверены, что хотите сгенерировать данные?',
+                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if ans == QMessageBox.No:
+            return
+
         if entity_type == EType.TENANT or entity_type == EType.LANDLORD:
             try:
                 n = int(self.tenantLinEdit.text()) if entity_type == EType.TENANT else int(self.landlordLinEdit.text())
@@ -130,79 +145,154 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 del parse
                 QMessageBox.about(self, 'Успех', f'Вы успешно спарсили {n} квартир')
 
+        self.get_entities(entity_type)
+
     def save_tenant_changes(self):
-        if self.cur_table != EType.TENANT:
+        def adjust_tenant(adjusted_tenant: Tenant) -> bool:
+            try:
+                adjusted_tenant.set_id(int(adjusted_tenant.id))
+                adjusted_tenant.set_age(int(adjusted_tenant.age))
+
+                assert 14 <= adjusted_tenant.age <= 100
+                assert adjusted_tenant.solvency.lower() in ('true', 'false', 'null', 'none')
+                if adjusted_tenant.solvency.lower() == 'none':
+                    adjusted_tenant.set_solvency('null')
+
+            except ValueError:
+                QMessageBox.about(self, 'Ошибка', 'Поля с целочисленными значениями не могут быть другого типа')
+            except AssertionError:
+                QMessageBox.about(self, 'Ошибка', 'Платежеспособность должна принимать значения true или false, '
+                                                  'возраст должен принадлежать значениям [14, 100]')
+            else:
+                return True
+            return False
+
+        if self.cur_entity != EType.TENANT:
             return
 
         for tenant, tenant_upd in zip(self.data, self.upd_data):
-            try:
-                tenant_upd.set_id(int(tenant_upd.id))
-                tenant_upd.set_age(int(tenant_upd.age))
-                if tenant_upd.solvency == 'None':
-                    tenant_upd.set_solvency('null')
-            except ValueError:
-                QMessageBox.about(self, 'Ошибка', 'Поля с целочисленными значениями не могут быть другого типа')
-            else:
-                if tenant != tenant_upd:
-                    if tenant.id != tenant_upd.id:
-                        QMessageBox.about(self, 'Ошибка', f'Нельзя изменять ID ({tenant.id} != {tenant_upd.id})')
-                    else:
-                        get_tenant = self.controller.update_tenant(tenant_upd)
-                        if not get_tenant:
-                            QMessageBox.about(self, 'Ошибка', f'Невозможно обновить арендатора с id = {tenant_upd.id}')
-                        else:
-                            QMessageBox.about(self, 'Успех', f'Арендодатель с id = {tenant_upd.id} успешно обновлен')
-                            self.data[self.data.index(tenant)] = copy.deepcopy(tenant_upd)
+            if not tenant_upd.id.isdigit() or tenant.id != int(tenant_upd.id):
+                QMessageBox.about(self, 'Ошибка', f'Нельзя изменять ID ({tenant.id} != {tenant_upd.id})')
+            elif adjust_tenant(tenant_upd) and tenant != tenant_upd:
+                result_tenant = self.controller.update_tenant(tenant_upd)
+                if not result_tenant:
+                    QMessageBox.about(self, 'Ошибка', f'Невозможно обновить арендатора с id = {tenant_upd.id}. '
+                                                      f'Проверьте введенные данные на корректность')
+                else:
+                    QMessageBox.about(self, 'Успех', f'Арендодатель с id = {tenant_upd.id} успешно обновлен')
+                    self.data[self.data.index(tenant)] = copy.deepcopy(tenant_upd)
 
         for i in range(len(self.data), len(self.upd_data)):
-            try:
-                self.upd_data[i].set_id(int(self.upd_data[i].id))
-                self.upd_data[i].set_age(int(self.upd_data[i].age))
-                if self.upd_data[i].solvency == 'None':
-                    self.upd_data[i].set_solvency('null')
-            except ValueError:
-                QMessageBox.about(self, 'Ошибка', 'Поля с целочисленными значениями не могут быть другого типа')
-            else:
-                get_tenant = self.controller.add_tenant(self.upd_data[i])
-                if not get_tenant:
-                    QMessageBox.about(self, 'Ошибка', f'Невозможно добавить арендатора с id = {self.upd_data[i].id}')
+            if adjust_tenant(self.upd_data[i]):
+                result_tenant = self.controller.add_tenant(self.upd_data[i])
+                if not result_tenant:
+                    QMessageBox.about(self, 'Ошибка', f'Невозможно добавить арендатора с id = {self.upd_data[i].id}. '
+                                                      f'Проверьте введенные данные на корректность')
                 else:
                     QMessageBox.about(self, 'Успех', f'Арендатор с id = {self.upd_data[i].id} успешно добавлен')
                     self.data.append(self.upd_data[i])
 
+        self.get_entities(EType.TENANT)
+
     def save_landlord_changes(self):
-        if self.cur_table != EType.LANDLORD:
+        def adjust_landlord(adjusted_landlord: Landlord) -> bool:
+            try:
+                adjusted_landlord.set_id(int(adjusted_landlord.id))
+                adjusted_landlord.set_age(int(adjusted_landlord.age))
+                adjusted_landlord.set_rating(float(adjusted_landlord.rating))
+
+                assert 14 <= adjusted_landlord.age <= 100
+                assert 0. <= adjusted_landlord.rating <= 10.
+
+            except ValueError:
+                QMessageBox.about(self, 'Ошибка', 'Поля с численными значениями не могут быть другого типа')
+            except AssertionError:
+                QMessageBox.about(self, 'Ошибка', 'Возраст должен принадлежать значениям [14, 100], '
+                                                  'рейтинг - [0.0, 10.0]')
+            else:
+                return True
+            return False
+
+        if self.cur_entity != EType.LANDLORD:
             return
 
         for landlord, landlord_upd in zip(self.data, self.upd_data):
-            try:
-                landlord_upd.set_id(int(landlord_upd.id))
-                landlord_upd.set_age(int(landlord_upd.age))
-                landlord_upd.set_rating(float(landlord_upd.rating))
-            except ValueError:
-                QMessageBox.about(self, 'Ошибка', 'Поля с численными значениями не могут быть другого типа')
-            else:
-                if landlord != landlord_upd:
-                    if landlord.id != landlord_upd.id:
-                        QMessageBox.about(self, 'Ошибка', f'Нельзя изменять ID ({landlord.id} != {landlord_upd.id})')
-                    else:
-                        get_landlord = self.controller.update_landlord(landlord_upd)
-                        if not get_landlord:
-                            QMessageBox.about(self, 'Ошибка', f'Невозможно обновить арендодателя с id = {landlord_upd.id}')
-                        else:
-                            QMessageBox.about(self, 'Успех', f'Арендодатель с id = {landlord_upd.id} успешно обновлен')
-                            self.data[self.data.index(landlord)] = copy.deepcopy(landlord_upd)
+            if not landlord_upd.id.isdigit() or landlord.id != int(landlord_upd.id):
+                QMessageBox.about(self, 'Ошибка', f'Нельзя изменять ID ({landlord.id} != {landlord_upd.id})')
+            elif adjust_landlord(landlord_upd) and landlord != landlord_upd:
+                result_landlord = self.controller.update_landlord(landlord_upd)
+                if not result_landlord:
+                    QMessageBox.about(self, 'Ошибка', f'Невозможно обновить арендодателя с id = {landlord_upd.id}.'
+                                                      f'Проверьте введенные данные на корректность')
+                else:
+                    QMessageBox.about(self, 'Успех', f'Арендодатель с id = {landlord_upd.id} успешно обновлен')
+                    self.data[self.data.index(landlord)] = copy.deepcopy(landlord_upd)
 
         for i in range(len(self.data), len(self.upd_data)):
-            try:
-                self.upd_data[i].set_id(int(self.upd_data[i].id))
-                self.upd_data[i].set_age(int(self.upd_data[i].age))
-            except ValueError:
-                QMessageBox.about(self, 'Ошибка', 'Поля с целочисленными значениями не могут быть другого типа')
-            else:
-                get_landlord = self.controller.add_landlord(self.upd_data[i])
-                if not get_landlord:
-                    QMessageBox.about(self, 'Ошибка', f'Невозможно добавить арендодателя с id = {self.upd_data[i].id}')
+            if adjust_landlord(self.upd_data[i]):
+                result_landlord = self.controller.add_landlord(self.upd_data[i])
+                if not result_landlord:
+                    QMessageBox.about(self, 'Ошибка', f'Невозможно добавить арендодателя с id = {self.upd_data[i].id}. '
+                                                      f'Проверьте введенные данные на корректность')
                 else:
                     QMessageBox.about(self, 'Успех', f'Арендодатель с id = {self.upd_data[i].id} успешно добавлен')
+                    self.data.append(self.upd_data[i])
+
+        self.get_entities(EType.LANDLORD)
+
+    def save_flat_changes(self):
+        def adjust_flat(adjusted_flat: Flat) -> bool:
+            try:
+                adjusted_flat.set_owner_id(int(adjusted_flat.owner_id))
+                adjusted_flat.set_price(int(adjusted_flat.price))
+                adjusted_flat.set_rooms(int(adjusted_flat.rooms))
+                adjusted_flat.set_square(float(adjusted_flat.square))
+                adjusted_flat.set_floor(int(adjusted_flat.floor))
+                adjusted_flat.set_max_floor(int(adjusted_flat.max_floor))
+
+                if not self.controller.check_landlord(adjusted_flat.owner_id):
+                    raise IndexError
+                assert adjusted_flat.price > 0 and adjusted_flat.rooms > 0 and adjusted_flat.square > 0
+
+                assert adjusted_flat.floor > 0 and adjusted_flat.max_floor > 0
+                if adjusted_flat.floor > adjusted_flat.max_floor:
+                    raise AttributeError
+
+            except ValueError:
+                QMessageBox.about(self, 'Ошибка', 'Поля с численными значениями не могут быть другого типа')
+            except AssertionError:
+                QMessageBox.about(self, 'Ошибка', 'Поля "Цена", "Комнаты", "Площадь", "Этаж", "Максимальный этаж" '
+                                                  'должны быть положительными числами')
+            except IndexError:
+                QMessageBox.about(self, 'Ошибка', f'Арендодателя с id {adjusted_flat.owner_id} не существует')
+            except AttributeError:
+                QMessageBox.about(self, 'Ошибка', 'Этаж не может быть больше максимального этажа')
+            else:
+                return True
+            return False
+
+        if self.cur_entity != EType.FLAT:
+            return
+
+        for flat, flat_upd in zip(self.data, self.upd_data):
+            if not flat_upd.id.isdigit() or int(flat.id) != int(flat_upd.id):
+                QMessageBox.about(self, 'Ошибка', f'Нельзя изменять ID ({flat.id} != {flat_upd.id})')
+            elif adjust_flat(flat_upd) and flat != flat_upd:
+                result_flat = self.controller.update_flat(flat_upd)
+                if not result_flat:
+                    QMessageBox.about(self, 'Ошибка', f'Невозможно обновить квартиру с id = {flat_upd.id}.'
+                                                      f'Проверьте введенные данные на корректность')
+                else:
+                    QMessageBox.about(self, 'Успех', f'Квартира с id = {flat_upd.id} успешно обновлена')
+                    self.data[self.data.index(flat)] = copy.deepcopy(flat_upd)
+
+        for i in range(len(self.data), len(self.upd_data)):
+            if adjust_flat(self.upd_data[i]):
+                result_flat = self.controller.add_flat(self.upd_data[i])
+                if not result_flat:
+                    QMessageBox.about(self, 'Ошибка', f'Невозможно добавить квартиру с id = {self.upd_data[i].id}. '
+                                                      f'Проверьте введенные данные на корректность')
+                else:
+                    QMessageBox.about(self, 'Успех', f'Квартира с id = {self.upd_data[i].id} успешно добавлена '
+                                                     f'(примечание: id присвоен автоматически)')
                     self.data.append(self.upd_data[i])

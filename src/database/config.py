@@ -20,3 +20,4 @@ DB_ADMIN_PARAMS = {**DB_PARAMS, 'user': 'admin', 'password': 'admin'}
 DB_TABLES_FILE = './query/tables.sql'
 DB_CONSTRAINTS_FILE = './query/constraints.sql'
 DB_ROLES_FILE = './query/roles.sql'
+DB_TRIGGER_FILE = './query/triggers.sql'

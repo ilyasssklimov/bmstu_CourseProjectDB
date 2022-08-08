@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QTableWidgetItem, QAbstractItemView, QMessageBox
 from src.admin_panel.design import Ui_MainWindow
 from src.bot.config import EntityType as EType
 from src.controller.admin import AdminController
-from src.database.config import DB_ADMIN_PARAMS
+from src.database.config import DB_DEFAULT_PARAMS, RolesDB
 from src.database.database import PostgresDB
 from src.generate_data.config import MOSCOW_FLATS_URL
 from src.generate_data.flat import ParseFlats
@@ -23,7 +23,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data: list[Tenant | Landlord | Flat] = []
         self.upd_data: list[Tenant | Landlord | Flat] = []
 
-        self.__db = PostgresDB(DB_ADMIN_PARAMS)
+        self.__db = PostgresDB(DB_DEFAULT_PARAMS)
+        self.__db.execute_init_files()
+        self.__db.set_role(RolesDB.ADMIN)
         self.controller: AdminController = AdminController(self.__db)
 
         self.get_funcs = {
@@ -296,3 +298,5 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     QMessageBox.about(self, 'Успех', f'Квартира с id = {self.upd_data[i].id} успешно добавлена '
                                                      f'(примечание: id присвоен автоматически)')
                     self.data.append(self.upd_data[i])
+
+        self.get_entities(EType.FLAT)

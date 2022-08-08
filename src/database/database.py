@@ -1,6 +1,6 @@
 import logging
 import psycopg2 as ps
-from src.database.config import DB_TABLES_FILE, DB_CONSTRAINTS_FILE, DB_ROLES_FILE, RolesDB
+from src.database.config import DB_TABLES_FILE, DB_CONSTRAINTS_FILE, DB_ROLES_FILE, DB_TRIGGER_FILE, RolesDB
 
 
 class PostgresDB:
@@ -17,6 +17,7 @@ class PostgresDB:
         self.execute_file(DB_TABLES_FILE)
         self.execute_file(DB_CONSTRAINTS_FILE)
         self.execute_file(DB_ROLES_FILE)
+        self.execute_file(DB_TRIGGER_FILE)
 
     def connect_db(self, db_params: dict[str, str]):
         self.__connection = ps.connect(**db_params)

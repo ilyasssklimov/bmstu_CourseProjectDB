@@ -15,7 +15,7 @@ class Flat:
         }
 
     @property
-    def flat_id(self):
+    def id(self):
         return self.__args[0]
 
     @property
@@ -57,6 +57,9 @@ class Flat:
     def get_params(self):
         return list(self.__args.values())
 
+    def set_id(self, value):
+        self.__args[0] = value
+
     def set_owner_id(self, value):
         self.__args[1] = value
 
@@ -85,10 +88,7 @@ class Flat:
         self.__args[9] = value
 
     def __getitem__(self, item):
-        if item in self.__args:
-            return self.__args[item]
-        else:
-            return None
+        return self.get_params()[item]
 
     def __setitem__(self, key, value):
         self.__args[key] = value

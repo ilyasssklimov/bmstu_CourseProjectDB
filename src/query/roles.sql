@@ -11,7 +11,7 @@ END;
 $$
 LANGUAGE 'plpgsql';
 
--- delete role if if exists
+-- delete role if it exists
 CREATE OR REPLACE FUNCTION public.delete_role (r_name text)
 RETURNS VOID AS
 $$

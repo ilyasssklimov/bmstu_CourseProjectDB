@@ -5,8 +5,8 @@ from aiogram.types import InlineKeyboardMarkup
 import logging
 import os
 from src.bot.config import API_TOKEN, IMG_PATH, EntityType as EType
-from src.database.config import DB_DEFAULT_PARAMS, RolesDB
-from src.database.database import PostgresDB
+from src.database.config import RolesDB
+from src.database.database import BaseDatabase
 from src.controller.guest import GuestController
 from src.controller.tenant import TenantController
 from src.controller.landlord import LandlordController
@@ -18,9 +18,10 @@ from src.bot.states import RegisterTenantStates, RegisterLandlordStates, AddFlat
 class SayNoToHostelBot:
     bot = Bot(token=API_TOKEN)
     dispatcher = Dispatcher(bot, storage=MemoryStorage())
-    database = PostgresDB(DB_DEFAULT_PARAMS)
-    controller = None
-    role = None
+    database: BaseDatabase
+    controller: GuestController | TenantController | LandlordController
+    role: RolesDB
+
     controllers_dict = {
         RolesDB.GUEST: GuestController,
         RolesDB.TENANT: TenantController,
@@ -28,8 +29,9 @@ class SayNoToHostelBot:
     }
 
     @classmethod
-    def execute_init_files(cls):
-        cls.database.execute_init_files()
+    def init_db(cls, database: BaseDatabase):
+        assert issubclass(type(database), BaseDatabase)
+        cls.database = database
 
     @classmethod
     def set_role(cls, role: RolesDB):

@@ -1,14 +1,14 @@
 import logging
 import psycopg2 as ps
 
-from src.database.database import PostgresDB
+from src.database.database import BaseDatabase
 from src.model.flat import Flat
 from src.model.tenant import Tenant
 from src.model.landlord import Landlord
 
 
 class GuestController:
-    def __init__(self, db: PostgresDB):
+    def __init__(self, db: BaseDatabase):
         self._db = db
 
     def check_tenant(self, tenant_id: int):

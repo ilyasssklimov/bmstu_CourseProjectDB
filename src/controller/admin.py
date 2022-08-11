@@ -1,13 +1,13 @@
 import logging
 import psycopg2 as ps
-from src.database.database import PostgresDB
+from src.database.database import BaseDatabase
 from src.model.flat import Flat
 from src.model.landlord import Landlord
 from src.model.tenant import Tenant
 
 
 class AdminController:
-    def __init__(self, db: PostgresDB):
+    def __init__(self, db: BaseDatabase):
         self.__db = db
 
     # tenant methods

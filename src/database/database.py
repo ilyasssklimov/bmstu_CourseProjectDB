@@ -1,197 +1,163 @@
-import logging
-import psycopg2 as ps
-from src.database.config import DB_TABLES_FILE, DB_CONSTRAINTS_FILE, DB_ROLES_FILE, DB_TRIGGER_FILE, RolesDB
+import abc
+from src.database.config import RolesDB
 
 
-class PostgresDB:
-    def __init__(self, db_params: dict[str, str]):
-        self.__connection = None
-        self.__cursor = None
-        self.connect_db(db_params)
-
-    def __del__(self):
-        self.__cursor.close()
-        self.__connection.close()
-
-    def execute_init_files(self):
-        self.execute_file(DB_TABLES_FILE)
-        self.execute_file(DB_CONSTRAINTS_FILE)
-        self.execute_file(DB_ROLES_FILE)
-        self.execute_file(DB_TRIGGER_FILE)
-
+class BaseDatabase(metaclass=abc.ABCMeta):
     def connect_db(self, db_params: dict[str, str]):
-        self.__connection = ps.connect(**db_params)
-        self.__cursor = self.__connection.cursor()
+        """
+        Connect to database by params
+        """
+        raise NotImplementedError
 
+    @abc.abstractmethod
     def set_role(self, role: RolesDB):
-        query = f'SET ROLE {role.value}'
-        self.execute(query)
+        """
+        Set role to use database
+        """
+        raise NotImplementedError
 
+    @abc.abstractmethod
     def execute(self, query: str):
-        try:
-            self.__cursor.execute(query)
-        except Exception as e:
-            self.__connection.rollback()
-            raise e
-        self.__connection.commit()
+        """
+        Execute query
+        """
+        raise NotImplementedError
 
+    @abc.abstractmethod
     def select(self, query: str):
-        try:
-            self.__cursor.execute(query)
-        except Exception as e:
-            self.__connection.rollback()
-            raise e
-        return self.__cursor.fetchall()
-
-    def execute_file(self, filename: str):
-        try:
-            with open(filename) as f:
-                self.execute(f.read())
-        except FileNotFoundError as e:
-            logging.debug(e)
+        """
+        Select by query
+        """
+        raise NotImplementedError
 
     # tenant methods
+    @abc.abstractmethod
     def add_tenant(self, user_id: int, full_name: str, sex: str, city: str, qualities: str, age: int, solvency: bool):
-        query = f'''
-        INSERT INTO public.tenant (id, full_name, sex, city, personal_qualities, age, solvency)
-        VALUES ({user_id}, '{full_name}', '{sex}', '{city}', '{qualities}', {age}, {solvency});
-        '''
-        self.execute(query)
-        logging.info(f'Tenant with name \'{full_name}\' is successfully added')
-        return user_id, full_name, sex, city, qualities, age, solvency
+        """
+        Add tenant to database
+        """
+        raise NotImplementedError
 
+    @abc.abstractmethod
     def get_tenants(self):
-        query = '''SELECT * FROM public.tenant'''
-        logging.info('Get all tenants from DB')
-        return self.select(query)
+        """
+        Get all tenants
+        """
+        raise NotImplementedError
 
-    def get_tenant(self, tenant_id):
-        query = f'''SELECT * FROM public.tenant WHERE id = {tenant_id}'''
-        logging.info(f'Get tenant with id = {tenant_id}')
-        return self.select(query)[0]
+    @abc.abstractmethod
+    def get_tenant(self, tenant_id: int):
+        """
+        Get tenant by id
+        """
+        raise NotImplementedError
 
+    @abc.abstractmethod
     def update_tenant(self, tenant_id: int, full_name: str, sex: str, city: str,
                       qualities: str, age: int, solvency: bool):
-        query = f'''
-        UPDATE public.tenant SET full_name = '{full_name}', sex = '{sex}', city = '{city}',
-        personal_qualities = '{qualities}', age = {age}, solvency = {solvency} WHERE id = {tenant_id}
-        '''
-        logging.info(f'Update tenant with name = \'{full_name}\'')
-        self.execute(query)
-        return tenant_id, full_name, sex, city, qualities, age, solvency
+        """
+        Update tenant by id
+        """
+        raise NotImplementedError
 
-    def delete_tenant(self, tenant_id):
-        query = f'''DELETE FROM public.tenant WHERE id = {tenant_id};'''
-        tenant = self.get_tenant(tenant_id)
-        self.execute(query)
-        logging.info(f'Delete tenant with id = {tenant_id}')
-        return tenant
+    @abc.abstractmethod
+    def delete_tenant(self, tenant_id: int):
+        """
+        Delete tenant by id
+        """
+        raise NotImplementedError
 
+    @abc.abstractmethod
     def check_tenant(self, tenant_id: int):
-        query = f'''SELECT * FROM public.tenant WHERE id = {tenant_id}'''
-        tenants = self.select(query)
-        logging.info('Checking tenants')
-        return bool(tenants)
+        """
+        Check by id if tenant exists in database
+        """
+        raise NotImplementedError
 
     # landlord methods
     def add_landlord(self, user_id: int, full_name: str, city: str, rating: float, age: int, phone: str, username: str):
-        query = f'''
-        INSERT INTO public.landlord (id, full_name, city, rating, age, phone, username)
-        VALUES ({user_id}, '{full_name}', '{city}', {rating}, {age}, '{phone}', '{username}');
-        '''
-        self.execute(query)
-        logging.info(f'Landlord with name \'{full_name}\' is successfully added')
-        return user_id, full_name, city, rating, age
+        """
+        Add landlord to database
+        """
+        raise NotImplementedError
 
     def get_landlords(self):
-        query = '''SELECT * FROM public.landlord'''
-        logging.info('Get all landlords from DB')
-        return self.select(query)
+        """
+        Get all landlords
+        """
+        raise NotImplementedError
 
     def get_landlord(self, landlord_id: int):
-        query = f'''SELECT * FROM public.landlord WHERE id = {landlord_id}'''
-        logging.info(f'Get landlord with id = {landlord_id}')
-        return self.select(query)[0]
+        """
+        Get landlord by id
+        """
+        raise NotImplementedError
 
     def update_landlord(self, landlord_id: int, full_name: str, city: str, rating: float, age: int,
                         phone: str, username: str):
-        query = f'''
-        UPDATE public.landlord SET full_name = '{full_name}', city = '{city}', rating = {rating}, age = {age},
-        phone = '{phone}', username = '{username}' WHERE id = {landlord_id}
-        '''
-        logging.info(f'Update landlord with name = \'{full_name}\'')
-        self.execute(query)
-        return landlord_id, full_name, city, rating, age
+        """
+        Update landlord by id
+        """
+        raise NotImplementedError
 
     def delete_landlord(self, landlord_id: int):
-        query = f'''DELETE FROM public.landlord WHERE id = {landlord_id};'''
-        landlord = self.get_landlord(landlord_id)
-        self.execute(query)
-        logging.info(f'Delete landlord with id = {landlord_id}')
-        return landlord
+        """
+        Delete landlord by id
+        """
 
     def check_landlord(self, landlord_id: int):
-        query = f'''SELECT * FROM public.landlord WHERE id = {landlord_id}'''
-        landlords = self.select(query)
-        logging.info('Checking landlord')
-        return bool(landlords)
+        """
+        Check by id if landlord exists in database
+        """
+        raise NotImplementedError
 
     # flat methods
     def add_flat(self, owner_id: int, price: int, rooms: int, square: float, address: str, metro: str,
                  floor: int, max_floor: int, description: str):
-        query = f'''
-        INSERT INTO public.flat (owner_id, price, rooms, square, address, metro, floor, max_floor, description)
-        VALUES ({owner_id}, {price}, {rooms}, {square}, '{address}', '{metro}', {floor}, {max_floor}, '{description}')
-        '''
-        self.execute(query)
-        logging.info(f'Flat with owner_id \'{owner_id}\' is successfully added')
-        flat_id = self.select('''SELECT CURRVAL('flat_id_seq');''')[0][0]
-        return flat_id, owner_id, price, square, address, metro, floor, max_floor, description
+        """
+        Add flat to database
+        """
+        raise NotImplementedError
 
     def get_flats(self):
-        query = f'''SELECT * FROM public.flat'''
-        logging.info('Get all flats')
-        return self.select(query)
+        """
+        Get all flats
+        """
+        raise NotImplementedError
 
     def add_photo(self, flat_id: int, photo: str):
-        query = f'''INSERT INTO public.flat_photo (flat_id, photo) VALUES ({flat_id}, '{photo}')'''
-        self.execute(query)
-        logging.info(f'Add photo to flat with id \'{flat_id}\'')
-        return photo
+        """
+        Add photo of flat
+        """
+        raise NotImplementedError
 
     def delete_photos(self, flat_id: int):
-        query = f'''DELETE FROM public.flat_photo WHERE flat_id = {flat_id}'''
-        photos = self.get_photos(flat_id)
-        self.execute(query)
-        logging.info(f'Delete photos of flat with id = {flat_id}')
-        return photos
+        """
+        Delete photos of flat by id
+        """
+        raise NotImplementedError
 
     def get_photos(self, flat_id: int):
-        query = f'''SELECT photo FROM public.flat_photo WHERE flat_id = {flat_id}'''
-        logging.info(f'Get photos of flat with id \'{flat_id}\'')
-        return [photo[0] for photo in self.select(query)]
+        """
+        Get photos of flat by id
+        """
+        raise NotImplementedError
 
     def get_flat(self, flat_id: int):
-        query = f'''SELECT * FROM public.flat WHERE id = {flat_id}'''
-        logging.info(f'Get flat with id = {flat_id}')
-        return self.select(query)[0]
+        """
+        Get flat by id
+        """
+        raise NotImplementedError
 
     def delete_flat(self, flat_id: int):
-        query = f'''DELETE FROM public.flat WHERE id = {flat_id};'''
-        flat = self.get_flat(flat_id)
-        photos = self.delete_photos(flat_id)
-        self.execute(query)
-        logging.info(f'Delete flat with id = {flat_id}')
-        return flat, photos
+        """
+        Delete flat by id
+        """
+        raise NotImplementedError
 
     def update_flat(self, flat_id: int, owner_id: int, price: int, rooms: int, square: float, address: str, metro: str,
                     floor: int, max_floor: int, description: str):
-        query = f'''
-        UPDATE public.flat SET owner_id = {owner_id}, price = {price}, rooms = {rooms}, square = {square}, 
-                               address = '{address}', metro = '{metro}', floor = {floor}, max_floor = {max_floor},
-                               description = '{description}' 
-        WHERE id = {flat_id}
-        '''
-        self.execute(query)
-        logging.info(f'Update flat with id = \'{flat_id}\'')
-        return flat_id, owner_id, price, rooms, square, address, metro, floor, max_floor, description
+        """
+        Update flat by id
+        """
+        raise NotImplementedError

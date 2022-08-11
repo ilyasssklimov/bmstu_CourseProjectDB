@@ -7,12 +7,12 @@ from selenium import webdriver
 from selenium.webdriver import DesiredCapabilities
 from urllib.request import urlretrieve
 from src.bot.config import IMG_PATH
-from src.database.database import PostgresDB
+from src.database.database import BaseDatabase
 from src.generate_data.config import ERROR_504
 
 
 class ParseFlats:
-    def __init__(self, db: PostgresDB):
+    def __init__(self, db: BaseDatabase):
         self.__db = db
         self.__driver = webdriver.Chrome(desired_capabilities=DesiredCapabilities().CHROME)
         self.__driver.implicitly_wait(10)

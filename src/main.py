@@ -3,15 +3,16 @@ import sys
 from bot.bot import SayNoToHostelBot
 from src.logger.logger import init_logger
 from src.logger.config import TargetType
-from src.database.config import RolesDB
+from src.database.config import DB_DEFAULT_PARAMS, RolesDB
+from src.database.pg_database import PgDatabase
 
 
 def main():
     sys.path.append('.')
     init_logger(TargetType.BOT)
 
+    SayNoToHostelBot.init_db(PgDatabase(DB_DEFAULT_PARAMS))
     SayNoToHostelBot.init_img_directory()
-    SayNoToHostelBot.execute_init_files()
     SayNoToHostelBot.set_role(RolesDB.GUEST)
 
     executor.start_polling(SayNoToHostelBot.dispatcher, skip_updates=True)

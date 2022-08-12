@@ -75,24 +75,28 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     # landlord methods
+    @abc.abstractmethod
     def add_landlord(self, user_id: int, full_name: str, city: str, rating: float, age: int, phone: str, username: str):
         """
         Add landlord to database
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def get_landlords(self):
         """
         Get all landlords
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def get_landlord(self, landlord_id: int):
         """
         Get landlord by id
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def update_landlord(self, landlord_id: int, full_name: str, city: str, rating: float, age: int,
                         phone: str, username: str):
         """
@@ -100,11 +104,13 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def delete_landlord(self, landlord_id: int):
         """
         Delete landlord by id
         """
 
+    @abc.abstractmethod
     def check_landlord(self, landlord_id: int):
         """
         Check by id if landlord exists in database
@@ -112,6 +118,7 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     # flat methods
+    @abc.abstractmethod
     def add_flat(self, owner_id: int, price: int, rooms: int, square: float, address: str, metro: str,
                  floor: int, max_floor: int, description: str):
         """
@@ -119,42 +126,49 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def get_flats(self):
         """
         Get all flats
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def add_photo(self, flat_id: int, photo: str):
         """
         Add photo of flat
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def delete_photos(self, flat_id: int):
         """
         Delete photos of flat by id
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def get_photos(self, flat_id: int):
         """
         Get photos of flat by id
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def get_flat(self, flat_id: int):
         """
         Get flat by id
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def delete_flat(self, flat_id: int):
         """
         Delete flat by id
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def update_flat(self, flat_id: int, owner_id: int, price: int, rooms: int, square: float, address: str, metro: str,
                     floor: int, max_floor: int, description: str):
         """

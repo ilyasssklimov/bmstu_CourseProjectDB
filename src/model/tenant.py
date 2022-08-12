@@ -1,66 +1,66 @@
 class Tenant:
     def __init__(self, tenant_id=-1, full_name='', sex='', city='', qualities='', age=-1, solvency='None'):
         self.__args = {
-            0: tenant_id,
-            1: full_name,
-            2: sex,
-            3: city,
-            4: qualities,
-            5: age,
-            6: solvency
+            'id': tenant_id,
+            'full_name': full_name,
+            'sex': sex,
+            'city': city,
+            'qualities': qualities,
+            'age': age,
+            'solvency': solvency
         }
 
     @property
     def id(self):
-        return self.__args[0]
+        return self.__args['id']
 
     @property
     def full_name(self):
-        return self.__args[1]
+        return self.__args['full_name']
 
     @property
     def sex(self):
-        return self.__args[2]
+        return self.__args['sex']
 
     @property
     def city(self):
-        return self.__args[3]
+        return self.__args['city']
 
     @property
     def qualities(self):
-        return self.__args[4]
+        return self.__args['qualities']
 
     @property
     def age(self):
-        return self.__args[5]
+        return self.__args['age']
 
     @property
     def solvency(self):
-        return self.__args[6]
+        return self.__args['solvency']
 
     def get_params(self):
         return list(self.__args.values())
 
     def set_id(self, value):
-        self.__args[0] = value
+        self.__args['id'] = value
 
     def set_full_name(self, value):
-        self.__args[1] = value
+        self.__args['full_name'] = value
 
     def set_sex(self, value):
-        self.__args[2] = value
+        self.__args['sex'] = value
 
     def set_city(self, value):
-        self.__args[3] = value
+        self.__args['city'] = value
 
     def set_qualities(self, value):
-        self.__args[4] = value
+        self.__args['qualities'] = value
 
     def set_age(self, value):
-        self.__args[5] = value
+        self.__args['value'] = value
 
     def set_solvency(self, value):
-        self.__args[6] = value
+        self.__args['solvency'] = value
 
     def __getitem__(self, item):
         if item in self.__args:
@@ -75,7 +75,7 @@ class Tenant:
         return len(self.__args)
 
     def __bool__(self):
-        return self.__args[0] != -1
+        return self.id != -1
 
     def __eq__(self, other):
         return (
@@ -93,8 +93,8 @@ class Tenant:
         return not self == other
 
     def __str__(self):
-        return f'Tenant (id = {self.__args[0]}, full_name = {self.__args[1]}, sex = {self.__args[2]}, city = ' \
-               f'{self.__args[3]}, qualities = {self.__args[4]}, age = {self.__args[5]}, solvency = {self.__args[6]})'
+        return f'Tenant (id = {self.id}, full_name = {self.full_name}, sex = {self.sex}, city = ' \
+               f'{self.city}, qualities = {self.qualities}, age = {self.age}, solvency = {self.solvency})'
 
     def __repr__(self):
         return str(self)

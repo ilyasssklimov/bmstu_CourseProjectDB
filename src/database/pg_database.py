@@ -197,3 +197,42 @@ class PgDatabase(BaseDatabase):
         self.execute(query)
         logging.info(f'Update flat with id = \'{flat_id}\'')
         return flat_id, owner_id, price, rooms, square, address, metro, floor, max_floor, description
+
+    # neighborhood methods
+    def add_neighborhood(self, tenant_id: int, neighbors: int, price: int, place: str, sex: str, preferences: str):
+        query = f'''
+        INSERT INTO public.neighborhood (tenant_id, neighbors, price, place, sex, preferences)
+        VALUES ({tenant_id}, {neighbors}, {price}, '{place}', '{sex}', '{preferences}')
+        '''
+        self.execute(query)
+        logging.info(f'Neighborhood with tenant_id \'{tenant_id}\' is successfully added')
+        neighborhood_id = self.select('''SELECT CURRVAL('neighborhood_id_seq');''')[0][0]
+        return neighborhood_id, tenant_id, neighbors, price, place, sex, preferences
+
+    def get_neighborhoods(self):
+        query = f'''SELECT * FROM public.neighborhood'''
+        logging.info('Get all neighborhood')
+        return self.select(query)
+
+    def get_neighborhood(self, neighborhood_id: int):
+        query = f'''SELECT * FROM public.neighborhood WHERE id = {neighborhood_id}'''
+        logging.info(f'Get neighborhood with id = {neighborhood_id}')
+        return self.select(query)[0]
+
+    def update_neighborhood(self, neighborhood_id: int, tenant_id: int, neighbors: int, price: int,
+                            place: str, sex: str, preferences: str):
+        query = f'''
+        UPDATE public.neighborhood SET tenant_id = {tenant_id}, neighbors = {neighbors}, price = {price}, 
+                                       place = '{place}', sex = '{sex}', preferences = '{preferences}' 
+        WHERE id = {neighborhood_id}
+        '''
+        self.execute(query)
+        logging.info(f'Update neighborhood with id = \'{neighborhood_id}\'')
+        return neighborhood_id, tenant_id, neighbors, price, place, sex, preferences
+
+    def delete_neighborhood(self, neighborhood_id: int):
+        query = f'''DELETE FROM public.neighborhood WHERE id = {neighborhood_id};'''
+        neighborhood = self.get_neighborhood(neighborhood_id)
+        self.execute(query)
+        logging.info(f'Delete neighborhood with id = {neighborhood_id}')
+        return neighborhood

@@ -175,3 +175,40 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         Update flat by id
         """
         raise NotImplementedError
+
+    # neighborhood methods
+    @abc.abstractmethod
+    def add_neighborhood(self, tenant_id: int, neighbors: int, price: int, place: str, sex: str, preferences: str):
+        """
+        Add neighborhood to database
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_neighborhoods(self):
+        """
+        Get all neighborhoods
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_neighborhood(self, neighborhood_id: int):
+        """
+        Get neighborhood by id
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def update_neighborhood(self, neighborhood_id: int, tenant_id: int, neighbors: int, price: int,
+                            place: str, sex: str, preferences: str):
+        """
+        Update neighborhood by id
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def delete_neighborhood(self, neighborhood_id: int):
+        """
+        Delete neighborhood by id
+        """
+        raise NotImplementedError

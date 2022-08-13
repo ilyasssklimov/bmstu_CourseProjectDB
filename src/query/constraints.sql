@@ -169,3 +169,41 @@ SELECT public.create_constraint(
     'flat_photo_check',
     'ALTER TABLE public.flat_photo ADD CONSTRAINT flat_photo_check CHECK (photo IS NOT NULL);'
 );
+
+
+-- create constrains to public.neighborhood
+SELECT public.create_constraint (
+    'neighborhood',
+    'neighborhood_pkey',
+    'ALTER TABLE public.neighborhood ADD CONSTRAINT neighborhood_pkey PRIMARY KEY (id);'
+);
+
+SELECT public.create_constraint (
+    'tenant',
+    'neighborhood_tenant_id_fkey',
+    'ALTER TABLE public.neighborhood ADD CONSTRAINT neighborhood_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenant (id);'
+);
+
+SELECT public.create_constraint (
+    'neighborhood',
+    'neighborhood_tenant_id_check',
+    'ALTER TABLE public.neighborhood ADD CONSTRAINT neighborhood_tenant_id_check CHECK (tenant_id IS NOT NULL);'
+);
+
+SELECT public.create_constraint(
+    'neighborhood',
+    'neighborhood_neighbors_check',
+    'ALTER TABLE public.neighborhood ADD CONSTRAINT neighborhood_neighbors_check CHECK (neighbors > 0 AND neighbors IS NOT NULL);'
+);
+
+SELECT public.create_constraint(
+    'neighborhood',
+    'neighborhood_price_check',
+    'ALTER TABLE public.neighborhood ADD CONSTRAINT neighborhood_price_check CHECK (price > 0 AND price IS NOT NULL);'
+);
+
+SELECT public.create_constraint(
+    'neighborhood',
+    'neighborhood_sex_check',
+    'ALTER TABLE public.neighborhood ADD CONSTRAINT neighborhood_sex_check CHECK (sex IN (''M'', ''F'', ''N'') AND sex IS NOT NULL);'
+);

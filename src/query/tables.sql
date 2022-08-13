@@ -45,3 +45,14 @@ CREATE TABLE IF NOT EXISTS public.flat_photo (
     flat_id INTEGER,
     photo VARCHAR(200)
 );
+
+
+CREATE TABLE IF NOT EXISTS public.neighborhood (
+    id SERIAL,
+    tenant_id INTEGER,
+    neighbors INTEGER,
+    price INTEGER,
+    place TEXT,
+    sex CHAR,
+    preferences TEXT
+)

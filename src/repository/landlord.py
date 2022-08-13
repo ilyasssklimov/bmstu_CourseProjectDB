@@ -24,8 +24,8 @@ class LandlordRepository:
 
     def add_landlord(self, landlord: Landlord) -> Landlord:
         try:
-            add_landlord = Landlord(*self.__db.add_landlord(*landlord.get_params()))
-            return add_landlord
+            new_landlord = Landlord(*self.__db.add_landlord(*landlord.get_params()))
+            return new_landlord
         except Exception as e:
             logging.error(e)
             logging.error(f'Some error while adding landlord with name \'{landlord.full_name}\'')

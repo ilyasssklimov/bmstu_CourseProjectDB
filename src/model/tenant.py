@@ -41,6 +41,9 @@ class Tenant:
     def get_params(self):
         return list(self.__args.values())
 
+    def get_names(self):
+        return list(self.__args.keys())
+
     def set_id(self, value):
         self.__args['id'] = value
 

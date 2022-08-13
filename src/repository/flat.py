@@ -24,8 +24,8 @@ class FlatRepository:
 
     def add_flat(self, flat: Flat) -> Flat:
         try:
-            add_flat = Flat(*self.__db.add_flat(*flat.get_params()[1:]))
-            return add_flat
+            new_flat = Flat(*self.__db.add_flat(*flat.get_params()[1:]))
+            return new_flat
         except Exception as e:
             logging.error(e)
             logging.error(f'Some error while adding flat with id = {flat.id}')

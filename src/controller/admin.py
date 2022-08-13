@@ -2,9 +2,11 @@ from src.database.database import BaseDatabase
 from src.model.flat import Flat
 from src.model.landlord import Landlord
 from src.model.tenant import Tenant
+from src.model.neighborhood import Neighborhood
 from src.repository.tenant import TenantRepository
 from src.repository.landlord import LandlordRepository
 from src.repository.flat import FlatRepository
+from src.repository.neighborhood import NeighborhoodRepository
 
 
 class AdminController:
@@ -12,6 +14,7 @@ class AdminController:
         self.__tenant_repo = TenantRepository(db)
         self.__landlord_repo = LandlordRepository(db)
         self.__flat_repo = FlatRepository(db)
+        self.__neighborhood_repo = NeighborhoodRepository(db)
 
     # tenant methods
     def get_tenants(self) -> tuple[list[str], list[Tenant]]:
@@ -70,3 +73,20 @@ class AdminController:
         del_flat = self.__flat_repo.delete_flat(flat_id)
         return del_flat
 
+    # neighborhood methods
+    def get_neighborhoods(self) -> (list[str], list[Neighborhood]):
+        headers = Neighborhood().get_names()
+        neighborhoods = self.__neighborhood_repo.get_neighborhoods()
+        return headers, neighborhoods
+
+    def add_neighborhood(self, neighborhood: Neighborhood) -> Neighborhood:
+        new_neighborhood = self.__neighborhood_repo.add_neighborhood(neighborhood)
+        return new_neighborhood
+
+    def update_neighborhood(self, neighborhood: Neighborhood) -> Neighborhood:
+        upd_neighborhood = self.__neighborhood_repo.update_neighborhood(neighborhood)
+        return upd_neighborhood
+
+    def delete_neighborhood(self, neighborhood_id: int) -> Neighborhood:
+        del_neighborhood = self.__neighborhood_repo.delete_neighborhood(neighborhood_id)
+        return del_neighborhood

@@ -36,3 +36,23 @@ CREATE TRIGGER delete_flat
 BEFORE DELETE on public.flat
 FOR EACH ROW
 EXECUTE PROCEDURE public.delete_flat_photos();
+
+
+-- trigger to delete neighborhoods before deleting tenant
+CREATE OR REPLACE FUNCTION public.delete_tenant_neighborhoods ()
+RETURNS TRIGGER AS
+$$
+BEGIN
+    DELETE FROM public.neighborhood
+    WHERE tenant_id = old.id;
+    return old;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+DROP TRIGGER IF EXISTS delete_tenant on public.tenant;
+
+CREATE TRIGGER delete_tenant
+BEFORE DELETE on public.tenant
+FOR EACH ROW
+EXECUTE PROCEDURE public.delete_tenant_neighborhoods();

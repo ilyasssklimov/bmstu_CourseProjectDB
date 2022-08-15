@@ -34,6 +34,9 @@ class AdminController:
         del_tenant = self.__tenant_repo.delete_tenant(tenant_id)
         return del_tenant
 
+    def check_tenant(self, tenant_id: int) -> bool:
+        return self.__tenant_repo.check_tenant(tenant_id)
+
     # landlord methods
     def get_landlords(self) -> tuple[list[str], list[Landlord]]:
         headers = Landlord().get_names()

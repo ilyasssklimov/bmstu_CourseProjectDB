@@ -12,31 +12,3 @@ class Neighborhood(BaseModel):
             sex=sex,
             preferences=preferences
         )
-
-    @property
-    def id(self):
-        return self._args['id']
-
-    @property
-    def tenant_id(self):
-        return self._args['tenant_id']
-
-    @property
-    def neighbors(self):
-        return self._args['neighbors']
-
-    @property
-    def price(self):
-        return self._args['price']
-
-    @property
-    def place(self):
-        return self._args['price']
-
-    @property
-    def sex(self):
-        return self._args['sex']
-
-    @property
-    def preferences(self):
-        return self._args['preferences']

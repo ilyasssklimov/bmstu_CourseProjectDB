@@ -207,3 +207,46 @@ SELECT public.create_constraint(
     'neighborhood_sex_check',
     'ALTER TABLE public.neighborhood ADD CONSTRAINT neighborhood_sex_check CHECK (sex IN (''M'', ''F'', ''N'') AND sex IS NOT NULL);'
 );
+
+
+-- create constraints to public.goods
+SELECT public.create_constraint (
+    'goods',
+    'goods_pkey',
+    'ALTER TABLE public.goods ADD CONSTRAINT goods_pkey PRIMARY KEY (id);'
+);
+
+SELECT public.create_constraint (
+    'goods',
+    'goods_owner_id_fkey',
+    'ALTER TABLE public.goods ADD CONSTRAINT goods_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.tenant (id);'
+);
+
+SELECT public.create_constraint (
+    'goods',
+    'goods_owner_id_check',
+    'ALTER TABLE public.goods ADD CONSTRAINT goods_owner_id_check CHECK (owner_id IS NOT NULL);'
+);
+SELECT public.create_constraint(
+    'goods',
+    'goods_name_check',
+    'ALTER TABLE public.goods ADD CONSTRAINT goods_name_check CHECK (name IS NOT NULL);'
+);
+
+SELECT public.create_constraint(
+    'goods',
+    'goods_price_check',
+    'ALTER TABLE public.goods ADD CONSTRAINT goods_price_check CHECK (price > 0 AND price IS NOT NULL);'
+);
+
+-- E - excellent
+-- G - good
+-- S - satisfactory
+-- U - unsatisfactory
+-- T - terrible
+SELECT public.create_constraint(
+    'goods',
+    'goods_condition_check',
+    'ALTER TABLE public.goods ADD CONSTRAINT goods_condition_check CHECK ' ||
+    '(condition IN (''E'', ''G'', ''S'', ''U'', ''T'') AND condition IS NOT NULL);'
+);

@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS public.flat_photo (
 );
 
 
+-- create table public.neighborhood
 CREATE TABLE IF NOT EXISTS public.neighborhood (
     id SERIAL,
     tenant_id INTEGER,
@@ -55,4 +56,15 @@ CREATE TABLE IF NOT EXISTS public.neighborhood (
     place TEXT,
     sex CHAR,
     preferences TEXT
-)
+);
+
+
+-- create table public.goods
+CREATE TABLE IF NOT EXISTS public.goods (
+    id SERIAL,
+    owner_id INTEGER,
+    name VARCHAR(50),
+    price INTEGER,
+    condition CHAR,
+    bargain BOOLEAN
+);

@@ -9,14 +9,18 @@ from urllib.request import urlretrieve
 from src.bot.config import IMG_PATH
 from src.database.database import BaseDatabase
 from src.generate_data.config import ERROR_504
+from src.model.flat import Flat
+from src.repository.flat import FlatRepository
+from src.repository.landlord import LandlordRepository
 
 
-class ParseFlats:
+class ParserFlats:
     def __init__(self, db: BaseDatabase):
-        self.__db = db
+        self.__landlord_repo = LandlordRepository(db)
+        self.__flat_repo = FlatRepository(db)
         self.__driver = webdriver.Chrome(desired_capabilities=DesiredCapabilities().CHROME)
         self.__driver.implicitly_wait(10)
-        self.__owner_ids = [landlord[0] for landlord in db.get_landlords()]
+        self.__owner_ids = [landlord.id for landlord in self.__landlord_repo.get_landlords()]
 
     def __del__(self):
         self.__driver.close()
@@ -25,7 +29,7 @@ class ParseFlats:
         self.__driver.get(url)
         return self.__driver.page_source
 
-    def get_flats(self, url: str, page: int) -> list[dict[str, int | float | str]]:
+    def get_flats(self, url: str, page: int) -> list[tuple[Flat, str]]:
         cur_url = f'{url}?Page={page}'
         html = self.get_html(cur_url)
         if self.__driver.title == ERROR_504:
@@ -33,7 +37,7 @@ class ParseFlats:
 
         soup = BeautifulSoup(html, 'html.parser')
         soup_flats = soup.find('div', class_='search-results__itemCardList___RdWje').find_all('a')
-        flats = []
+        flats: list[tuple[Flat, str]] = []
         for flat in soup_flats:
             photo_url = flat.find('div', class_='card-photo__imageWrapper___2tUR3').find_next('div').find('img')['src']
             photo = os.path.join(IMG_PATH, f'{photo_url.split("/")[-1]}.jpg')
@@ -51,18 +55,21 @@ class ParseFlats:
             description = info_block.find('div', class_='long-item-card__descriptionLogoContainer___4HJmL').text
 
             try:
-                flats.append({
-                    'photo': photo,
-                    'price': int(re.sub(r'[^\d]', '', price)),
-                    'rooms': int(re.search(r'\d+(?=-)', place)[0]),
-                    'square': float(re.search(r'\d+[.\s]\d*', place)[0]),
-                    'floor': int(re.search(r'\d+(?=/)', place)[0]),
-                    'max_floor': int(re.search(r'(?<=/)\d+', place)[0]),
-                    'metro': metro,
-                    'address': address,
-                    'description': description,
-                    'owner_id': random.choice(self.__owner_ids)
-                })
+                flats.append((
+                    Flat(
+                        flat_id=-1,
+                        owner_id=random.choice(self.__owner_ids),
+                        price=int(re.sub(r'[^\d]', '', price)),
+                        rooms=int(re.search(r'\d+(?=-)', place)[0]),
+                        square=float(re.search(r'\d+[.\s]\d*', place)[0]),
+                        address=address,
+                        metro=metro,
+                        floor=int(re.search(r'\d+(?=/)', place)[0]),
+                        max_floor=int(re.search(r'(?<=/)\d+', place)[0]),
+                        description=description
+                    ),
+                    photo
+                ))
             except TypeError:
                 logging.debug(f'Unable to get flat with title \'{place}\'')
 
@@ -86,10 +93,8 @@ class ParseFlats:
                 if not parsing:
                     break
 
-                new_flat = self.__db.add_flat(flat['owner_id'], flat['price'], flat['rooms'], flat['square'],
-                                              flat['address'], flat['metro'], flat['floor'], flat['max_floor'],
-                                              flat['description'])
-                self.__db.add_photo(new_flat[0], flat['photo'])
+                new_flat = self.__flat_repo.add_flat(flat[0])
+                self.__flat_repo.add_photo(new_flat.id, flat[1])
                 count_flats += 1
 
             cur_page += 1

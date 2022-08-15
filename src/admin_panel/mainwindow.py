@@ -134,6 +134,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             assert n > 0
         except (ValueError, AssertionError):
             QMessageBox.about(self, 'Ошибка', 'Количество должно быть целым положительным числом')
+            self.lineEdit.setText('100')
         else:
             if self.cur_entity == EType.TENANT or self.cur_entity == EType.LANDLORD:
                 self.gen_data.generate_users(self.cur_entity, n)
@@ -148,7 +149,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {n} объявлений о соседстве')
 
             self.get_entities(self.cur_entity)
-            self.lineEdit.setText('100')
 
     def save_data(self):
         if self.cur_entity == EType.NO_TYPE:

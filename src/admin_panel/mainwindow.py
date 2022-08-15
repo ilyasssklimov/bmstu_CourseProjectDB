@@ -8,11 +8,11 @@ from src.controller.admin import AdminController
 from src.database.config import RolesDB
 from src.database.database import BaseDatabase
 from src.generate_data.config import MOSCOW_FLATS_URL
-from src.generate_data.flat import ParseFlats
-from src.generate_data.user import GenerateData
-from src.model.tenant import Tenant
-from src.model.landlord import Landlord
+from src.generate_data.data import DataGenerator
 from src.model.flat import Flat
+from src.model.landlord import Landlord
+from src.model.neighborhood import Neighborhood
+from src.model.tenant import Tenant
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -20,46 +20,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
         self.cur_entity: EType = EType.NO_TYPE
-        self.data: list[Tenant | Landlord | Flat] = []
-        self.upd_data: list[Tenant | Landlord | Flat] = []
+        self.data: list[Tenant | Landlord | Flat | Neighborhood] = []
+        self.upd_data: list[Tenant | Landlord | Flat | Neighborhood] = []
 
         self.__db = database
         self.__db.set_role(RolesDB.ADMIN)
         self.controller: AdminController = AdminController(self.__db)
+        self.gen_data: DataGenerator = DataGenerator(self.__db)
 
         self.get_funcs = {
             EType.TENANT: self.controller.get_tenants,
             EType.LANDLORD: self.controller.get_landlords,
-            EType.FLAT: self.controller.get_flats
+            EType.FLAT: self.controller.get_flats,
+            EType.NEIGHBORHOOD: self.controller.get_neighborhoods
         }
         self.del_funcs = {
             EType.TENANT: self.controller.delete_tenant,
             EType.LANDLORD: self.controller.delete_landlord,
-            EType.FLAT: self.controller.delete_flat
+            EType.FLAT: self.controller.delete_flat,
+            EType.NEIGHBORHOOD: self.controller.delete_neighborhood
+        }
+        self.sav_funcs = {
+            EType.TENANT: self.__save_tenant_changes,
+            EType.LANDLORD: self.__save_landlord_changes,
+            EType.FLAT: self.__save_flat_changes,
+            EType.NEIGHBORHOOD: self.__save_neighborhood_changes
+        }
+        self.models = {
+            EType.TENANT: Tenant(),
+            EType.LANDLORD: Landlord(),
+            EType.FLAT: Flat(),
+            EType.NEIGHBORHOOD: Neighborhood()
         }
 
         self.table.itemChanged.connect(self.change_item)
         self.addBtn.clicked.connect(self.add_row)
         self.delBtn.clicked.connect(self.delete_row)
+        self.savBtn.clicked.connect(self.save_data)
+        self.genBtn.clicked.connect(self.generate_data)
 
-        self.tenantGetBtn.clicked.connect(lambda: self.get_entities(EType.TENANT))
-        self.tenantSavBtn.clicked.connect(self.save_tenant_changes)
-
-        self.landlordGetBtn.clicked.connect(lambda: self.get_entities(EType.LANDLORD))
-        self.landlordSavBtn.clicked.connect(self.save_landlord_changes)
-
-        self.flatGetBtn.clicked.connect(lambda: self.get_entities(EType.FLAT))
-        self.flatSavBtn.clicked.connect(self.save_flat_changes)
-
-        self.tenantGenBtn.clicked.connect(lambda: self.generate_data(EType.TENANT))
-        self.landlordGenBtn.clicked.connect(lambda: self.generate_data(EType.LANDLORD))
-        self.flatGenBtn.clicked.connect(lambda: self.generate_data(EType.FLAT))
+        self.getTenantBtn.clicked.connect(lambda: self.get_entities(EType.TENANT))
+        self.getLandlordBtn.clicked.connect(lambda: self.get_entities(EType.LANDLORD))
+        self.getFlatBtn.clicked.connect(lambda: self.get_entities(EType.FLAT))
+        self.getNeighborBtn.clicked.connect(lambda: self.get_entities(EType.NEIGHBORHOOD))
 
     def __del__(self):
         del self.__db
 
     def change_item(self, item):
-        self.upd_data[item.row()][item.column()] = item.text()
+        self.upd_data[item.row()][self.table.horizontalHeaderItem(item.column()).text()] = item.text()
 
     def get_entities(self, entity_type: EType):
         self.data = []
@@ -74,23 +83,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         for row, entity in enumerate(entities):
             self.data.append(copy.deepcopy(entity))
             self.upd_data.append(copy.deepcopy(entity))
-            for column in range(len(entity)):
-                self.table.setItem(row, column,  QTableWidgetItem(str(entity[column])))
+            for column, name in enumerate(entity.get_params()):
+                self.table.setItem(row, column, QTableWidgetItem(str(name)))
 
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.scrollToTop()
 
     def add_row(self):
-        if not self.cur_entity:
+        if self.cur_entity == EType.NO_TYPE:
             return
 
         self.table.setRowCount(self.table.rowCount() + 1)
-        if self.cur_entity == EType.TENANT:
-            self.upd_data.append(Tenant())
-        elif self.cur_entity == EType.LANDLORD:
-            self.upd_data.append(Landlord())
-        elif self.cur_entity == EType.FLAT:
-            self.upd_data.append(Flat())
+        self.upd_data.append(self.models[self.cur_entity])
         self.table.scrollToBottom()
 
     def delete_row(self):
@@ -103,52 +107,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if ans == QMessageBox.Yes:
             try:
-                if self.del_funcs[self.cur_entity](self.data[row].id):
+                del_obj = self.del_funcs[self.cur_entity](self.data[row].id)
+                if del_obj:
                     self.table.removeRow(row)
                     self.data.pop(row)
                     self.upd_data.pop(row)
-                    QMessageBox.about(self, 'Успех', f'Вы успешно удалили строку с индексом {row + 1}')
+                    QMessageBox.about(self, 'Успех', f'Вы успешно удалили объект с id = {del_obj.id}')
                 else:
-                    QMessageBox.about(self, 'Ошибка', f'Невозможно удалить строку с индексом = {row + 1}')
+                    QMessageBox.about(self, 'Ошибка', f'Невозможно удалить объект с id = {del_obj.id}')
             except IndexError:
                 logging.info(f'There is no row with index {row} in DB')
                 self.table.removeRow(row)
                 self.upd_data.pop(row)
 
-    def generate_data(self, entity_type: EType):
-        if entity_type == EType.NO_TYPE:
+    def generate_data(self):
+        if self.cur_entity == EType.NO_TYPE:
             return
 
         ans = QMessageBox.question(self, 'Генерация данных', f'Вы уверены, что хотите сгенерировать данные?',
-                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if ans == QMessageBox.No:
             return
 
-        if entity_type == EType.TENANT or entity_type == EType.LANDLORD:
-            try:
-                n = int(self.tenantLinEdit.text()) if entity_type == EType.TENANT else int(self.landlordLinEdit.text())
-                assert n > 0
-            except (ValueError, AssertionError):
-                QMessageBox.about(self, 'Ошибка', 'Количество пользователей должно быть положительным целым числом')
-            else:
-                generate = GenerateData(self.__db)
-                generate.generate_users(entity_type, n)
+        try:
+            n = int(self.lineEdit.text())
+            assert n > 0
+        except (ValueError, AssertionError):
+            QMessageBox.about(self, 'Ошибка', 'Количество должно быть целым положительным числом')
+        else:
+            if self.cur_entity == EType.TENANT or self.cur_entity == EType.LANDLORD:
+                self.gen_data.generate_users(self.cur_entity, n)
                 QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {n} пользователей')
-        elif entity_type == EType.FLAT:
-            try:
-                n = int(self.flatLinEdit.text())
-                assert n > 0
-            except (ValueError, AssertionError):
-                QMessageBox.about(self, 'Ошибка', 'Количество квартир должно быть целым положительным числом')
-            else:
-                parse = ParseFlats(self.__db)
-                parse.add_flats(MOSCOW_FLATS_URL, n)
-                del parse
+
+            elif self.cur_entity == EType.FLAT:
+                self.gen_data.parse_flats(MOSCOW_FLATS_URL, n)
                 QMessageBox.about(self, 'Успех', f'Вы успешно спарсили {n} квартир')
 
-        self.get_entities(entity_type)
+            elif self.cur_entity == EType.NEIGHBORHOOD:
+                self.gen_data.generate_neighborhoods(n)
+                QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {n} объявлений о соседстве')
 
-    def save_tenant_changes(self):
+            self.get_entities(self.cur_entity)
+            self.lineEdit.setText('100')
+
+    def save_data(self):
+        if self.cur_entity == EType.NO_TYPE:
+            return
+        self.sav_funcs[self.cur_entity]()
+
+    def __save_tenant_changes(self):
         def adjust_tenant(adjusted_tenant: Tenant) -> bool:
             try:
                 adjusted_tenant.set_id(int(adjusted_tenant.id))
@@ -162,17 +169,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             except ValueError:
                 QMessageBox.about(self, 'Ошибка', 'Поля с целочисленными значениями не могут быть другого типа')
             except AssertionError:
-                QMessageBox.about(self, 'Ошибка', 'Платежеспособность должна принимать значения true или false, '
+                QMessageBox.about(self, 'Ошибка', 'Платежеспособность должна принимать значения true, false или none, '
                                                   'возраст должен принадлежать значениям [14, 100]')
             else:
                 return True
+
             return False
 
         if self.cur_entity != EType.TENANT:
             return
 
         for tenant, tenant_upd in zip(self.data, self.upd_data):
-            if not tenant_upd.id.isdigit() or tenant.id != int(tenant_upd.id):
+            if not str(tenant_upd.id).isdigit() or tenant.id != int(tenant_upd.id):
                 QMessageBox.about(self, 'Ошибка', f'Нельзя изменять ID ({tenant.id} != {tenant_upd.id})')
             elif adjust_tenant(tenant_upd) and tenant != tenant_upd:
                 result_tenant = self.controller.update_tenant(tenant_upd)
@@ -195,7 +203,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.get_entities(EType.TENANT)
 
-    def save_landlord_changes(self):
+    def __save_landlord_changes(self):
         def adjust_landlord(adjusted_landlord: Landlord) -> bool:
             try:
                 adjusted_landlord.set_id(int(adjusted_landlord.id))
@@ -212,13 +220,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                                   'рейтинг - [0.0, 10.0]')
             else:
                 return True
+
             return False
 
         if self.cur_entity != EType.LANDLORD:
             return
 
         for landlord, landlord_upd in zip(self.data, self.upd_data):
-            if not landlord_upd.id.isdigit() or landlord.id != int(landlord_upd.id):
+            if not str(landlord_upd.id).isdigit() or landlord.id != int(landlord_upd.id):
                 QMessageBox.about(self, 'Ошибка', f'Нельзя изменять ID ({landlord.id} != {landlord_upd.id})')
             elif adjust_landlord(landlord_upd) and landlord != landlord_upd:
                 result_landlord = self.controller.update_landlord(landlord_upd)
@@ -241,9 +250,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.get_entities(EType.LANDLORD)
 
-    def save_flat_changes(self):
+    def __save_flat_changes(self):
         def adjust_flat(adjusted_flat: Flat) -> bool:
             try:
+                adjusted_flat.set_id(int(adjusted_flat.id))
                 adjusted_flat.set_owner_id(int(adjusted_flat.owner_id))
                 adjusted_flat.set_price(int(adjusted_flat.price))
                 adjusted_flat.set_rooms(int(adjusted_flat.rooms))
@@ -270,13 +280,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 QMessageBox.about(self, 'Ошибка', 'Этаж не может быть больше максимального этажа')
             else:
                 return True
+
             return False
 
         if self.cur_entity != EType.FLAT:
             return
 
         for flat, flat_upd in zip(self.data, self.upd_data):
-            if not flat_upd.id.isdigit() or int(flat.id) != int(flat_upd.id):
+            if not str(flat_upd.id).isdigit() or flat.id != int(flat_upd.id):
                 QMessageBox.about(self, 'Ошибка', f'Нельзя изменять ID ({flat.id} != {flat_upd.id})')
             elif adjust_flat(flat_upd) and flat != flat_upd:
                 result_flat = self.controller.update_flat(flat_upd)
@@ -299,3 +310,57 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     self.data.append(self.upd_data[i])
 
         self.get_entities(EType.FLAT)
+
+    def __save_neighborhood_changes(self):
+        def adjust_neighborhood(adjusted_neighborhood: Neighborhood) -> bool:
+            try:
+                adjusted_neighborhood.set_id(int(adjusted_neighborhood.id))
+                adjusted_neighborhood.set_tenant_id(int(adjusted_neighborhood.tenant_id))
+                adjusted_neighborhood.set_neighbors(int(adjusted_neighborhood.neighbors))
+                adjusted_neighborhood.set_price(int(adjusted_neighborhood.price))
+
+                if not self.controller.check_tenant(adjusted_neighborhood.tenant_id):
+                    raise IndexError
+                assert adjusted_neighborhood.neighbors > 0 and adjusted_neighborhood.price > 0
+
+            except ValueError:
+                QMessageBox.about(self, 'Ошибка', 'Поля с численными значениями не могут быть другого типа')
+            except AssertionError:
+                QMessageBox.about(self, 'Ошибка', 'Поля "Соседи", "Цена" должны быть положительными числами')
+            except IndexError:
+                QMessageBox.about(self, 'Ошибка', f'Арендатора с id {adjusted_neighborhood.tenant_id} не существует')
+            else:
+                return True
+
+            return False
+
+        if self.cur_entity != EType.NEIGHBORHOOD:
+            return
+
+        for neighborhood, neighborhood_upd in zip(self.data, self.upd_data):
+            if not str(neighborhood_upd.id).isdigit() or int(neighborhood.id) != int(neighborhood_upd.id):
+                QMessageBox.about(self, 'Ошибка', f'Нельзя изменять ID ({neighborhood.id} != {neighborhood_upd.id})')
+            elif adjust_neighborhood(neighborhood_upd) and neighborhood != neighborhood_upd:
+                result_neighborhood = self.controller.update_neighborhood(neighborhood_upd)
+                if not result_neighborhood:
+                    QMessageBox.about(self, 'Ошибка', f'Невозможно обновить объявление о соседстве с id = '
+                                                      f'{neighborhood_upd.id}. Проверьте введенные данные '
+                                                      f'на корректность')
+                else:
+                    QMessageBox.about(self, 'Успех', f'Объявление о соседстве с '
+                                                     f'id = {neighborhood_upd.id} успешно обновлена')
+                    self.data[self.data.index(neighborhood)] = copy.deepcopy(neighborhood_upd)
+
+        for i in range(len(self.data), len(self.upd_data)):
+            if adjust_neighborhood(self.upd_data[i]):
+                result_flat = self.controller.add_neighborhood(self.upd_data[i])
+                if not result_flat:
+                    QMessageBox.about(self, 'Ошибка', f'Невозможно добавить объявление о соседстве с id = '
+                                                      f'{self.upd_data[i].id}. Проверьте введенные данные '
+                                                      f'на корректность')
+                else:
+                    QMessageBox.about(self, 'Успех', f'Объявление о соседстве с id = {self.upd_data[i].id} '
+                                                     f'успешно добавлено (примечание: id присвоен автоматически)')
+                    self.data.append(self.upd_data[i])
+
+        self.get_entities(EType.NEIGHBORHOOD)

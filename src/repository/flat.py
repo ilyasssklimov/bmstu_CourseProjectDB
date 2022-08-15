@@ -41,3 +41,13 @@ class FlatRepository:
             logging.error(f'Some error while updating flat with id = {flat.id}')
 
         return Flat()
+
+    def add_photo(self, flat_id: int, photo: str) -> str:
+        try:
+            new_photo = self.__db.add_photo(flat_id, photo)
+            return new_photo
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while adding photo to flat with id = {flat_id}')
+
+        return ''

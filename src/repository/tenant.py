@@ -40,3 +40,7 @@ class TenantRepository:
             logging.error(f'Some error while deleting tenant with id = {tenant_id}')
 
         return Tenant()
+
+    def check_tenant(self, tenant_id: int) -> bool:
+        logging.info(f'Checking tenant with id = {tenant_id}')
+        return self.__db.check_tenant(tenant_id)

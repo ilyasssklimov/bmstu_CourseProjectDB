@@ -24,7 +24,7 @@ class NeighborhoodRepository:
 
     def add_neighborhood(self, neighborhood: Neighborhood) -> Neighborhood:
         try:
-            new_neighborhood = Neighborhood(*self.__db.add_neighborhood(*neighborhood.get_params()))
+            new_neighborhood = Neighborhood(*self.__db.add_neighborhood(*neighborhood.get_params()[1:]))
             return new_neighborhood
         except Exception as e:
             logging.error(e)

@@ -4,6 +4,7 @@ from faker import Faker
 from random import randint, choice, uniform
 from src.bot.config import EntityType as EType
 from src.database.database import BaseDatabase
+from src.generate_data.flat import ParserFlats
 from src.model.landlord import Landlord
 from src.model.neighborhood import Neighborhood
 from src.model.tenant import Tenant
@@ -12,11 +13,13 @@ from src.repository.neighborhood import NeighborhoodRepository
 from src.repository.tenant import TenantRepository
 
 
-class GenerateData:
+class DataGenerator:
     def __init__(self, db: BaseDatabase):
+        self.__db = db
         self.__landlord_repo = LandlordRepository(db)
         self.__tenant_repo = TenantRepository(db)
         self.__neighborhood_repo = NeighborhoodRepository(db)
+
         self.faker = Faker('ru_RU')
         self.__tenant_ids = [tenant.id for tenant in self.__tenant_repo.get_tenants()]
 
@@ -42,6 +45,11 @@ class GenerateData:
                 self.__landlord_repo.add_landlord(landlord)
             else:
                 raise ValueError('User type can be TENANT or LANDLORD')
+
+    def parse_flats(self, url: str, n: int = 100):
+        parser_flats = ParserFlats(self.__db)
+        parser_flats.add_flats(url, n)
+        del parser_flats
 
     def generate_neighborhoods(self, n: int = 100):
         for i in range(n):

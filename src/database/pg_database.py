@@ -1,4 +1,5 @@
 import logging
+from multipledispatch import dispatch
 import psycopg2 as ps
 from src.database.config import DB_TABLES_FILE, DB_CONSTRAINTS_FILE, DB_ROLES_FILE, DB_TRIGGER_FILE, RolesDB
 from src.database.database import BaseDatabase
@@ -236,3 +237,43 @@ class PgDatabase(BaseDatabase):
         self.execute(query)
         logging.info(f'Delete neighborhood with id = {neighborhood_id}')
         return neighborhood
+
+    # goods methods
+    def add_goods(self, owner_id: int, name: str, price: int, condition: str, bargain: bool):
+        query = f'''
+        INSERT INTO public.goods (owner_id, name, price, condition, bargain)
+        VALUES ({owner_id}, '{name}', {price}, '{condition}', {bargain})
+        '''
+        self.execute(query)
+        logging.info(f'Goods with owner_id \'{owner_id}\' is successfully added')
+        goods_id = self.select('''SELECT CURRVAL('goods_id_seq');''')[0][0]
+        return goods_id, owner_id, name, price, condition, bargain
+
+    @dispatch()
+    def get_goods(self):
+        query = f'''SELECT * FROM public.goods'''
+        logging.info('Get all goods')
+        return self.select(query)
+
+    @dispatch(int)
+    def get_goods(self, goods_id: int):
+        query = f'''SELECT * FROM public.goods WHERE id = {goods_id}'''
+        logging.info(f'Get goods with id = {goods_id}')
+        return self.select(query)[0]
+
+    def update_goods(self, goods_id: int, owner_id: int, name: str, price: int, condition: str, bargain: bool):
+        query = f'''
+        UPDATE public.goods SET owner_id = {owner_id}, name = '{name}', price = {price},
+                                condition = '{condition}', bargain = {bargain} 
+        WHERE id = {goods_id}
+        '''
+        self.execute(query)
+        logging.info(f'Update goods with id = \'{goods_id}\'')
+        return goods_id, owner_id, name, price, condition, bargain
+
+    def delete_goods(self, goods_id: int):
+        query = f'''DELETE FROM public.goods WHERE id = {goods_id};'''
+        goods = self.get_goods(goods_id)
+        self.execute(query)
+        logging.info(f'Delete goods with id = {goods_id}')
+        return goods

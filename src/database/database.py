@@ -1,4 +1,5 @@
 import abc
+from multipledispatch import dispatch
 from src.database.config import RolesDB
 
 
@@ -210,5 +211,43 @@ class BaseDatabase(metaclass=abc.ABCMeta):
     def delete_neighborhood(self, neighborhood_id: int):
         """
         Delete neighborhood by id
+        """
+        raise NotImplementedError
+
+    # goods methods
+    @abc.abstractmethod
+    def add_goods(self, owner_id: int, name: str, price: int, condition: str, bargain: bool):
+        """
+        Add goods to database
+        """
+        raise NotImplementedError
+
+    @dispatch()
+    @abc.abstractmethod
+    def get_goods(self):
+        """
+        Get all goods
+        """
+        raise NotImplementedError
+
+    @dispatch(int)
+    @abc.abstractmethod
+    def get_goods(self, goods_id: int):
+        """
+        Get goods by id
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def update_goods(self, goods_id: int, owner_id: int, name: str, price: int, condition: str, bargain: bool):
+        """
+        Update goods by id
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def delete_goods(self, goods_id: int):
+        """
+        Delete goods by id
         """
         raise NotImplementedError

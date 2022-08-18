@@ -217,7 +217,7 @@ SELECT public.create_constraint (
 );
 
 SELECT public.create_constraint (
-    'goods',
+    'tenant',
     'goods_owner_id_fkey',
     'ALTER TABLE public.goods ADD CONSTRAINT goods_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.tenant (id);'
 );

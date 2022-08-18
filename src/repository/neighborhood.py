@@ -41,5 +41,3 @@ class NeighborhoodRepository:
             logging.error(f'Some error while updating neighborhood with tenant_id = {neighborhood.tenant_id}')
 
         return Neighborhood()
-
-

@@ -12,10 +12,6 @@ class PgDatabase(BaseDatabase):
         self.connect_db(db_params)
         self.execute_init_files()
 
-    def __del__(self):
-        self.__cursor.close()
-        self.__connection.close()
-
     def execute_init_files(self):
         self.execute_file(DB_TABLES_FILE)
         self.execute_file(DB_CONSTRAINTS_FILE)
@@ -25,6 +21,10 @@ class PgDatabase(BaseDatabase):
     def connect_db(self, db_params: dict[str, str]):
         self.__connection = ps.connect(**db_params)
         self.__cursor = self.__connection.cursor()
+
+    def disconnect_db(self):
+        self.__cursor.close()
+        self.__connection.close()
 
     def set_role(self, role: RolesDB):
         query = f'SET ROLE {role.value}'

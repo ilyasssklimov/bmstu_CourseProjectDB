@@ -4,9 +4,17 @@ from src.database.config import RolesDB
 
 
 class BaseDatabase(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     def connect_db(self, db_params: dict[str, str]):
         """
         Connect to database by params
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def disconnect_db(self):
+        """
+        Disconnect from database
         """
         raise NotImplementedError
 

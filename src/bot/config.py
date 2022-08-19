@@ -8,6 +8,7 @@ class EntityType(Enum):
     LANDLORD = 2
     FLAT = 3
     NEIGHBORHOOD = 4
+    GOODS = 5
 
     def __eq__(self, other):
         if self.__class__ is other.__class__ and self.value == other.value:

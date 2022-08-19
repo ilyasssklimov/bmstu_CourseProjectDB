@@ -23,5 +23,46 @@ class EntityType(Enum):
 
 
 API_TOKEN = os.getenv('HOSTEL_TOKEN_API')
-
 IMG_PATH = './img'
+
+TENANT_FIELDS = {
+    'name': 'Имя',
+    'sex': 'Пол',
+    'city': 'Город',
+    'age': 'Возраст'
+}
+ALL_TENANT_FIELDS = {
+    'name': 'Имя',
+    'sex': 'Пол',
+    'city': 'Город',
+    'qualities': 'Персональные качества',
+    'age': 'Возраст',
+    'solvency': 'Платежеспособность'
+}
+
+LANDLORD_FIELDS = {
+    'name': 'Имя',
+    'city': 'Город',
+    'rating': 'Рейтинг',
+    'age': 'Возраст',
+    'phone': 'Телефон'
+}
+ALL_LANDLORD_FIELDS = {
+    'name': 'Имя',
+    'city': 'Город',
+    'rating': 'Рейтинг',
+    'age': 'Возраст',
+    'phone': 'Телефон',
+    'username': 'Имя пользователя'
+}
+
+FLAT_FIELDS = {
+    'price': 'Цена',
+    'rooms': 'Комнаты',
+    'square': 'Площадь',
+    'address': 'Адрес',
+    'metro': 'Ближайшее метро',
+    'floor': 'Этаж',
+    'max_floor': 'Максимальный этаж',
+    'description': 'Описание'
+}

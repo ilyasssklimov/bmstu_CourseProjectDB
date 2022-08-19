@@ -1,10 +1,10 @@
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-from aiogram.types import InlineKeyboardMarkup
 import logging
 import os
 from src.bot.config import API_TOKEN, IMG_PATH, EntityType as EType
+from src.bot.config import TENANT_FIELDS, LANDLORD_FIELDS, ALL_TENANT_FIELDS, ALL_LANDLORD_FIELDS, FLAT_FIELDS
 from src.bot.message import MESSAGE_START, MESSAGE_HELP
 from src.bot.states import RegisterTenantStates, RegisterLandlordStates, AddFlatStates, PaginationStates
 from src.database.config import RolesDB
@@ -91,8 +91,25 @@ async def send_help(message: types.Message):
 # Register user
 # ==============================================
 
-async def register_form(user_id: int, keyboard: InlineKeyboardMarkup):
-    await SayNoToHostelBot.bot.send_message(user_id, 'Заполните данные о себе:', reply_markup=keyboard)
+async def register_form(user_id: int, user_type: EType, state: FSMContext = None):
+    if user_type == EType.TENANT:
+        fields = ALL_TENANT_FIELDS
+        keyboard = kb.get_register_tenant_keyboard()
+    elif user_type == EType.LANDLORD:
+        fields = ALL_LANDLORD_FIELDS
+        keyboard = kb.get_register_landlord_keyboard()
+    else:
+        raise ValueError('Invalid type of user')
+
+    info = ''
+    async with state.proxy() as data:
+        for field in fields:
+            info += f'{fields[field]}: '
+            if data and field in data:
+                info += data[field]
+            info += '\n'
+
+        await SayNoToHostelBot.bot.send_message(user_id, info.strip(), reply_markup=keyboard)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands=['register_tenant', 'register_landlord'])
@@ -103,13 +120,13 @@ async def send_register(message: types.Message):
             await SayNoToHostelBot.bot.send_message(user_id, 'Вы уже зарегистрированы как арендатор')
         else:
             await RegisterTenantStates.START_STATE.set()
-            await register_form(user_id, kb.get_register_tenant_keyboard())
+            await register_form(user_id, EType.TENANT)
     elif message.text.endswith('landlord'):
         if SayNoToHostelBot.check_landlord(user_id):
             await SayNoToHostelBot.bot.send_message(user_id, 'Вы уже зарегистрированы как арендодатель')
         else:
             await RegisterLandlordStates.START_STATE.set()
-            await register_form(user_id, kb.get_register_landlord_keyboard())
+            await register_form(user_id, EType.LANDLORD)
 
 
 @SayNoToHostelBot.dispatcher.callback_query_handler(
@@ -166,24 +183,22 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
         case 'register_tenant_finish' | 'register_landlord_finish' as register_finish:
             async with state.proxy() as data:
                 if 'tenant' in register_finish:
-                    fields = ['name', 'sex', 'city', 'age']
-                    ru_fields = ['Имя', 'Пол', 'Город', 'Возраст']
+                    fields = TENANT_FIELDS
                 elif 'landlord' in register_finish:
-                    fields = ['name', 'city', 'rating', 'age', 'phone']
-                    ru_fields = ['Имя', 'Город', 'Рейтинг', 'Возраст', 'Телефон']
+                    fields = LANDLORD_FIELDS
                     data['rating'] = 0.0
                 else:
                     raise ValueError('Invalid param to callback')
 
-                blank = [ru_fields[fields.index(field)] for field in fields
+                blank = [fields[field] for field in fields
                          if field not in data]
                 if blank:
                     await SayNoToHostelBot.bot.send_message(
                         callback_query.from_user.id, 'Обязательными полями для ввода являются: ' + ', '.join(blank))
                     if 'tenant' in register_finish:
-                        await register_form(callback_query.from_user.id, kb.get_register_tenant_keyboard())
+                        await register_form(callback_query.from_user.id, EType.TENANT, state)
                     elif 'landlord' in register_finish:
-                        await register_form(callback_query.from_user.id, kb.get_register_landlord_keyboard())
+                        await register_form(callback_query.from_user.id, EType.LANDLORD, state)
                     else:
                         raise ValueError('Invalid param to callback')
                 else:
@@ -218,16 +233,16 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
 
-async def input_register_str(message: types.Message, state: FSMContext, field: str, user: EType):
+async def input_register_str(message: types.Message, state: FSMContext, field: str, user_type: EType):
     async with state.proxy() as data:
         data[field] = message.text
 
-    if user == EType.TENANT:
+    if user_type == EType.TENANT:
         await RegisterTenantStates.START_STATE.set()
-        await register_form(message.from_user.id, kb.get_register_tenant_keyboard())
-    elif user == EType.LANDLORD:
+    elif user_type == EType.LANDLORD:
         await RegisterLandlordStates.START_STATE.set()
-        await register_form(message.from_user.id, kb.get_register_landlord_keyboard())
+
+    await register_form(message.from_user.id, user_type, state)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=[RegisterTenantStates.NAME_STATE, RegisterLandlordStates.NAME_STATE])
@@ -257,7 +272,7 @@ async def input_phone(message: types.Message, state: FSMContext):
         await SayNoToHostelBot.bot.send_message(message.from_user.id,
                                                 'Телефон должен быть больше, чем 10-значной последовательностью цифр')
         await RegisterLandlordStates.START_STATE.set()
-        await register_form(message.from_user.id, kb.get_register_landlord_keyboard())
+        await register_form(message.from_user.id, EType.LANDLORD, state)
     else:
         await input_register_str(message, state, 'phone', EType.LANDLORD)
 
@@ -270,7 +285,7 @@ async def input_sex(callback_query: types.CallbackQuery, state: FSMContext):
             async with state.proxy() as data:
                 data['sex'] = 'M' if callback_query.data == 'sex_male' else 'F'
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
-            await register_form(callback_query.from_user.id, kb.get_register_tenant_keyboard())
+            await register_form(callback_query.from_user.id, EType.TENANT, state)
         case _:
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
@@ -290,10 +305,10 @@ async def input_age(message: types.Message, state: FSMContext):
     finally:
         if await state.get_state() == RegisterTenantStates.AGE_STATE.state:
             await RegisterTenantStates.START_STATE.set()
-            await register_form(message.from_user.id, kb.get_register_tenant_keyboard())
+            await register_form(message.from_user.id, EType.TENANT, state)
         elif await state.get_state() == RegisterLandlordStates.AGE_STATE.state:
             await RegisterLandlordStates.START_STATE.set()
-            await register_form(message.from_user.id, kb.get_register_landlord_keyboard())
+            await register_form(message.from_user.id, EType.LANDLORD, state)
 
 
 @SayNoToHostelBot.dispatcher.callback_query_handler(state=RegisterTenantStates.SOLVENCY_STATE, text_contains='solvency')
@@ -304,7 +319,7 @@ async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext)
             async with state.proxy() as data:
                 data['solvency'] = True if callback_query.data == 'solvency_yes' else False
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
-            await register_form(callback_query.from_user.id, kb.get_register_tenant_keyboard())
+            await register_form(callback_query.from_user.id, EType.TENANT, state)
         case _:
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
@@ -380,7 +395,7 @@ async def paginate_flats(callback_query: types.CallbackQuery, state: FSMContext)
                 for message in flat_messages:
                     await message.delete()
                 await show_flat(callback_query.from_user.id, flats[cur_flat], flat_photos[cur_flat])
-                
+
         case 'pagination_cancel':
             await state.finish()
             await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
@@ -393,9 +408,17 @@ async def paginate_flats(callback_query: types.CallbackQuery, state: FSMContext)
 # Add flats
 # ==============================================
 
-async def add_flat_form(user_id: int):
-    await SayNoToHostelBot.bot.send_message(user_id, 'Введите данные о квартире:',
-                                            reply_markup=kb.get_add_flat_keyboard())
+async def add_flat_form(user_id: int, state: FSMContext):
+    fields = FLAT_FIELDS
+    info = ''
+    async with state.proxy() as data:
+        for field in fields:
+            info += f'{fields[field]}: '
+            if data and field in data:
+                info += data[field]
+            info += '\n'
+
+        await SayNoToHostelBot.bot.send_message(user_id, info.strip(), reply_markup=kb.get_add_flat_keyboard())
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='add_flat')
@@ -407,7 +430,7 @@ async def add_flat_start(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data['photo'] = []
         await AddFlatStates.START_STATE.set()
-        await add_flat_form(message.from_user.id)
+        await add_flat_form(message.from_user.id, state)
 
 
 @SayNoToHostelBot.dispatcher.callback_query_handler(state=AddFlatStates.START_STATE, text_contains='add_flat')
@@ -452,7 +475,7 @@ async def add_flat(callback_query: types.CallbackQuery, state: FSMContext):
                 if blank:
                     await SayNoToHostelBot.bot.send_message(
                         callback_query.from_user.id, 'Обязательными полями для ввода являются: ' + ', '.join(blank))
-                    await add_flat_form(callback_query.from_user.id)
+                    await add_flat_form(callback_query.from_user.id, state)
                 else:
                     owner_id = callback_query.from_user.id
                     flat_data = [data[field] for field in fields]
@@ -487,7 +510,7 @@ async def input_add_flat_str(message: types.Message, state: FSMContext, field: s
         data[field] = message.text
 
     await AddFlatStates.START_STATE.set()
-    await add_flat_form(message.from_user.id)
+    await add_flat_form(message.from_user.id, state)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.ADDRESS_STATE)
@@ -519,7 +542,7 @@ async def input_price(message: types.Message, state: FSMContext):
             data['price'] = price
     finally:
         await AddFlatStates.START_STATE.set()
-        await add_flat_form(message.from_user.id)
+        await add_flat_form(message.from_user.id, state)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.SQUARE_STATE)
@@ -536,7 +559,7 @@ async def input_square(message: types.Message, state: FSMContext):
             data['square'] = square
     finally:
         await AddFlatStates.START_STATE.set()
-        await add_flat_form(message.from_user.id)
+        await add_flat_form(message.from_user.id, state)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.FLOOR_STATE)
@@ -555,7 +578,7 @@ async def input_floor(message: types.Message, state: FSMContext):
             data['max_floor'] = max_floor
     finally:
         await AddFlatStates.START_STATE.set()
-        await add_flat_form(message.from_user.id)
+        await add_flat_form(message.from_user.id, state)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.PHOTO_STATE, content_types='photo')
@@ -567,10 +590,10 @@ async def input_photo(message: types.Message, state: FSMContext):
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.PHOTO_STATE)
-async def input_photo(message: types.Message):
+async def input_photo(message: types.Message, state: FSMContext):
     if message.text == 'stop':
         await AddFlatStates.START_STATE.set()
-        await add_flat_form(message.from_user.id)
+        await add_flat_form(message.from_user.id, state)
     else:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы ввели что-то неверное, '
                                                                       'для окончания напишите stop')

@@ -13,6 +13,7 @@ from src.model.flat import Flat
 from src.model.landlord import Landlord
 from src.model.neighborhood import Neighborhood
 from src.model.tenant import Tenant
+from src.model.goods import Goods
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -20,8 +21,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
         self.cur_entity: EType = EType.NO_TYPE
-        self.data: list[Tenant | Landlord | Flat | Neighborhood] = []
-        self.upd_data: list[Tenant | Landlord | Flat | Neighborhood] = []
+        self.data: list[Tenant | Landlord | Flat | Neighborhood | Goods] = []
+        self.upd_data: list[Tenant | Landlord | Flat | Neighborhood | Goods] = []
 
         self.__db = database
         self.__db.set_role(RolesDB.ADMIN)
@@ -32,25 +33,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             EType.TENANT: self.controller.get_tenants,
             EType.LANDLORD: self.controller.get_landlords,
             EType.FLAT: self.controller.get_flats,
-            EType.NEIGHBORHOOD: self.controller.get_neighborhoods
+            EType.NEIGHBORHOOD: self.controller.get_neighborhoods,
+            EType.GOODS: self.controller.get_goods
         }
         self.del_funcs = {
             EType.TENANT: self.controller.delete_tenant,
             EType.LANDLORD: self.controller.delete_landlord,
             EType.FLAT: self.controller.delete_flat,
-            EType.NEIGHBORHOOD: self.controller.delete_neighborhood
+            EType.NEIGHBORHOOD: self.controller.delete_neighborhood,
+            EType.GOODS: self.controller.delete_goods
         }
         self.sav_funcs = {
             EType.TENANT: self.__save_tenant_changes,
             EType.LANDLORD: self.__save_landlord_changes,
             EType.FLAT: self.__save_flat_changes,
-            EType.NEIGHBORHOOD: self.__save_neighborhood_changes
+            EType.NEIGHBORHOOD: self.__save_neighborhood_changes,
+            EType.GOODS: self.__save_goods_changes
         }
         self.models = {
             EType.TENANT: Tenant(),
             EType.LANDLORD: Landlord(),
             EType.FLAT: Flat(),
-            EType.NEIGHBORHOOD: Neighborhood()
+            EType.NEIGHBORHOOD: Neighborhood(),
+            EType.GOODS: Goods()
         }
 
         self.table.itemChanged.connect(self.change_item)
@@ -63,9 +68,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.getLandlordBtn.clicked.connect(lambda: self.get_entities(EType.LANDLORD))
         self.getFlatBtn.clicked.connect(lambda: self.get_entities(EType.FLAT))
         self.getNeighborBtn.clicked.connect(lambda: self.get_entities(EType.NEIGHBORHOOD))
+        self.getGoodsBtn.clicked.connect(lambda: self.get_entities(EType.GOODS))
 
-    def __del__(self):
-        del self.__db
+    def closeEvent(self, event):
+        self.__db.disconnect_db()
+        super().closeEvent(event)
 
     def change_item(self, item):
         self.upd_data[item.row()][self.table.horizontalHeaderItem(item.column()).text()] = item.text()
@@ -148,6 +155,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.gen_data.generate_neighborhoods(n)
                 QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {n} объявлений о соседстве')
 
+            elif self.cur_entity == EType.GOODS:
+                self.gen_data.generate_goods(n)
+                QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {n} объявлений о товарах')
+
             self.get_entities(self.cur_entity)
 
     def save_data(self):
@@ -162,6 +173,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 adjusted_tenant.set_age(int(adjusted_tenant.age))
 
                 assert 14 <= adjusted_tenant.age <= 100
+                assert adjusted_tenant.sex in ('M', 'F')
                 assert adjusted_tenant.solvency.lower() in ('true', 'false', 'null', 'none')
                 if adjusted_tenant.solvency.lower() == 'none':
                     adjusted_tenant.set_solvency('null')
@@ -169,7 +181,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             except ValueError:
                 QMessageBox.about(self, 'Ошибка', 'Поля с целочисленными значениями не могут быть другого типа')
             except AssertionError:
-                QMessageBox.about(self, 'Ошибка', 'Платежеспособность должна принимать значения true, false или none, '
+                QMessageBox.about(self, 'Ошибка', 'Платежеспособность должна принимать значения true, false или none; '
+                                                  'пол - M или F; '
                                                   'возраст должен принадлежать значениям [14, 100]')
             else:
                 return True
@@ -198,7 +211,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     QMessageBox.about(self, 'Ошибка', f'Невозможно добавить арендатора с id = {self.upd_data[i].id}. '
                                                       f'Проверьте введенные данные на корректность')
                 else:
-                    QMessageBox.about(self, 'Успех', f'Арендатор с id = {self.upd_data[i].id} успешно добавлен')
+                    QMessageBox.about(self, 'Успех', f'Арендатор с id = {result_tenant.id} успешно добавлен')
                     self.data.append(self.upd_data[i])
 
         self.get_entities(EType.TENANT)
@@ -245,7 +258,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     QMessageBox.about(self, 'Ошибка', f'Невозможно добавить арендодателя с id = {self.upd_data[i].id}. '
                                                       f'Проверьте введенные данные на корректность')
                 else:
-                    QMessageBox.about(self, 'Успех', f'Арендодатель с id = {self.upd_data[i].id} успешно добавлен')
+                    QMessageBox.about(self, 'Успех', f'Арендодатель с id = {result_landlord.id} успешно добавлен')
                     self.data.append(self.upd_data[i])
 
         self.get_entities(EType.LANDLORD)
@@ -305,7 +318,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     QMessageBox.about(self, 'Ошибка', f'Невозможно добавить квартиру с id = {self.upd_data[i].id}. '
                                                       f'Проверьте введенные данные на корректность')
                 else:
-                    QMessageBox.about(self, 'Успех', f'Квартира с id = {self.upd_data[i].id} успешно добавлена '
+                    QMessageBox.about(self, 'Успех', f'Квартира с id = {result_flat.id} успешно добавлена '
                                                      f'(примечание: id присвоен автоматически)')
                     self.data.append(self.upd_data[i])
 
@@ -322,11 +335,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 if not self.controller.check_tenant(adjusted_neighborhood.tenant_id):
                     raise IndexError
                 assert adjusted_neighborhood.neighbors > 0 and adjusted_neighborhood.price > 0
+                assert adjusted_neighborhood.sex in ('M', 'F', 'N')
 
             except ValueError:
                 QMessageBox.about(self, 'Ошибка', 'Поля с численными значениями не могут быть другого типа')
             except AssertionError:
-                QMessageBox.about(self, 'Ошибка', 'Поля "Соседи", "Цена" должны быть положительными числами')
+                QMessageBox.about(self, 'Ошибка', 'Поля "Соседи", "Цена" должны быть положительными числами; '
+                                                  'пол - M, F или N')
             except IndexError:
                 QMessageBox.about(self, 'Ошибка', f'Арендатора с id {adjusted_neighborhood.tenant_id} не существует')
             else:
@@ -348,19 +363,78 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                                       f'на корректность')
                 else:
                     QMessageBox.about(self, 'Успех', f'Объявление о соседстве с '
-                                                     f'id = {neighborhood_upd.id} успешно обновлена')
+                                                     f'id = {neighborhood_upd.id} успешно обновлено')
                     self.data[self.data.index(neighborhood)] = copy.deepcopy(neighborhood_upd)
 
         for i in range(len(self.data), len(self.upd_data)):
             if adjust_neighborhood(self.upd_data[i]):
-                result_flat = self.controller.add_neighborhood(self.upd_data[i])
-                if not result_flat:
+                result_neighborhood = self.controller.add_neighborhood(self.upd_data[i])
+                if not result_neighborhood:
                     QMessageBox.about(self, 'Ошибка', f'Невозможно добавить объявление о соседстве с id = '
                                                       f'{self.upd_data[i].id}. Проверьте введенные данные '
                                                       f'на корректность')
                 else:
-                    QMessageBox.about(self, 'Успех', f'Объявление о соседстве с id = {self.upd_data[i].id} '
+                    QMessageBox.about(self, 'Успех', f'Объявление о соседстве с id = {result_neighborhood.id} '
                                                      f'успешно добавлено (примечание: id присвоен автоматически)')
                     self.data.append(self.upd_data[i])
 
         self.get_entities(EType.NEIGHBORHOOD)
+
+    def __save_goods_changes(self):
+        def adjust_goods(adjusted_goods: Goods) -> bool:
+            try:
+                adjusted_goods.set_id(int(adjusted_goods.id))
+                adjusted_goods.set_owner_id(int(adjusted_goods.owner_id))
+                adjusted_goods.set_price(int(adjusted_goods.price))
+
+                assert adjusted_goods.bargain.lower() in ('true', 'false', 'null', 'none')
+                if adjusted_goods.bargain.lower() == 'none':
+                    adjusted_goods.set_bargain('null')
+
+                assert adjusted_goods.condition in ('E', 'G', 'S', 'U', 'T')
+                assert adjusted_goods.price > 0
+                if not self.controller.check_tenant(adjusted_goods.owner_id):
+                    raise IndexError
+
+            except ValueError:
+                QMessageBox.about(self, 'Ошибка', 'Поля с численными значениями не могут быть другого типа')
+            except AssertionError:
+                QMessageBox.about(self, 'Ошибка', 'Торг должен принимать значения true, false или none; '
+                                                  'состояние - E, G, S, U или T; '
+                                                  'цена должна быть положительными числами)')
+            except IndexError:
+                QMessageBox.about(self, 'Ошибка', f'Арендатора с id {adjusted_goods.owner_id} не существует')
+            else:
+                return True
+
+            return False
+
+        if self.cur_entity != EType.GOODS:
+            return
+
+        for goods, goods_upd in zip(self.data, self.upd_data):
+            if not str(goods_upd.id).isdigit() or int(goods.id) != int(goods_upd.id):
+                QMessageBox.about(self, 'Ошибка', f'Нельзя изменять ID ({goods.id} != {goods_upd.id})')
+            elif adjust_goods(goods_upd) and goods != goods_upd:
+                result_goods = self.controller.update_goods(goods_upd)
+                if not result_goods:
+                    QMessageBox.about(self, 'Ошибка', f'Невозможно обновить объявление о товаре с id = '
+                                                      f'{goods_upd.id}. Проверьте введенные данные '
+                                                      f'на корректность')
+                else:
+                    QMessageBox.about(self, 'Успех', f'Объявление о товаре с id = {goods_upd.id} успешно обновлено')
+                    self.data[self.data.index(goods)] = copy.deepcopy(goods_upd)
+
+        for i in range(len(self.data), len(self.upd_data)):
+            if adjust_goods(self.upd_data[i]):
+                result_goods = self.controller.add_goods(self.upd_data[i])
+                if not result_goods:
+                    QMessageBox.about(self, 'Ошибка', f'Невозможно добавить объявление о товаре с id = '
+                                                      f'{self.upd_data[i].id}. Проверьте введенные данные '
+                                                      f'на корректность')
+                else:
+                    QMessageBox.about(self, 'Успех', f'Объявление о товаре с id = {result_goods.id} '
+                                                     f'успешно добавлено (примечание: id присвоен автоматически)')
+                    self.data.append(self.upd_data[i])
+
+        self.get_entities(EType.GOODS)

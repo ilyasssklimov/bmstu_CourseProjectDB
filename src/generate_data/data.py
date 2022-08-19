@@ -5,9 +5,11 @@ from random import randint, choice, uniform
 from src.bot.config import EntityType as EType
 from src.database.database import BaseDatabase
 from src.generate_data.flat import ParserFlats
+from src.model.goods import Goods
 from src.model.landlord import Landlord
 from src.model.neighborhood import Neighborhood
 from src.model.tenant import Tenant
+from src.repository.goods import GoodsRepository
 from src.repository.landlord import LandlordRepository
 from src.repository.neighborhood import NeighborhoodRepository
 from src.repository.tenant import TenantRepository
@@ -19,6 +21,7 @@ class DataGenerator:
         self.__landlord_repo = LandlordRepository(db)
         self.__tenant_repo = TenantRepository(db)
         self.__neighborhood_repo = NeighborhoodRepository(db)
+        self.__goods_repo = GoodsRepository(db)
 
         self.faker = Faker('ru_RU')
         self.__tenant_ids = [tenant.id for tenant in self.__tenant_repo.get_tenants()]
@@ -49,15 +52,24 @@ class DataGenerator:
     def parse_flats(self, url: str, n: int = 100):
         parser_flats = ParserFlats(self.__db)
         parser_flats.add_flats(url, n)
-        del parser_flats
 
     def generate_neighborhoods(self, n: int = 100):
         for i in range(n):
             tenant_id = random.choice(self.__tenant_ids)
             neighbors = randint(*cfg.NEIGHBOR_RANGE)
             price = randint(*cfg.NEIGHBORHOOD_PRICE_RANGE)
-            place = self.faker.text(25)
+            place = self.faker.address()
             sex = choice(['M', 'F', 'N'])
             preferences = self.faker.text(50)
             neighborhood = Neighborhood(-1, tenant_id, neighbors, price, place, sex, preferences)
             self.__neighborhood_repo.add_neighborhood(neighborhood)
+
+    def generate_goods(self, n: int = 100):
+        for i in range(n):
+            owner_id = random.choice(self.__tenant_ids)
+            name = self.faker.text(25)
+            price = randint(*cfg.GOODS_PRICE_RANGE)
+            condition = choice(['E', 'G', 'S', 'U', 'T'])
+            bargain = choice([True, False])
+            goods = Goods(-1, owner_id, name, price, condition, bargain)
+            self.__goods_repo.add_goods(goods)

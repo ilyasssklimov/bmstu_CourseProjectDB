@@ -5,14 +5,17 @@ from aiogram.types import InlineKeyboardMarkup
 import logging
 import os
 from src.bot.config import API_TOKEN, IMG_PATH, EntityType as EType
+from src.bot.message import MESSAGE_START, MESSAGE_HELP
+from src.bot.states import RegisterTenantStates, RegisterLandlordStates, AddFlatStates, PaginationStates
 from src.database.config import RolesDB
 from src.database.database import BaseDatabase
 from src.controller.guest import GuestController
 from src.controller.tenant import TenantController
 from src.controller.landlord import LandlordController
+from src.model.flat import Flat
+from src.model.landlord import Landlord
+from src.model.tenant import Tenant
 import src.bot.keyboard as kb
-from src.bot.message import MESSAGE_START, MESSAGE_HELP
-from src.bot.states import RegisterTenantStates, RegisterLandlordStates, AddFlatStates
 
 
 class SayNoToHostelBot:
@@ -83,6 +86,10 @@ async def send_welcome(message: types.Message):
 async def send_help(message: types.Message):
     await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
 
+
+# ==============================================
+# Register user
+# ==============================================
 
 async def register_form(user_id: int, keyboard: InlineKeyboardMarkup):
     await SayNoToHostelBot.bot.send_message(user_id, 'Заполните данные о себе:', reply_markup=keyboard)
@@ -162,8 +169,9 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                     fields = ['name', 'sex', 'city', 'age']
                     ru_fields = ['Имя', 'Пол', 'Город', 'Возраст']
                 elif 'landlord' in register_finish:
-                    fields = ['name', 'city', 'age', 'phone']
-                    ru_fields = ['Имя', 'Город', 'Возраст', 'Телефон']
+                    fields = ['name', 'city', 'rating', 'age', 'phone']
+                    ru_fields = ['Имя', 'Город', 'Рейтинг', 'Возраст', 'Телефон']
+                    data['rating'] = 0.0
                 else:
                     raise ValueError('Invalid param to callback')
 
@@ -179,16 +187,16 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                     else:
                         raise ValueError('Invalid param to callback')
                 else:
-                    register_data = [data[field] for field in fields]
+                    register_data = [callback_query.from_user.id] + [data[field] for field in fields]
                     if 'tenant' in register_finish:
                         qualities = data['qualities'] if 'qualities' in data else ''
                         solvency = data['solvency'] if 'solvency' in data else 'null'
-                        user = SayNoToHostelBot.controller.register_tenant(
-                            callback_query.from_user.id, *register_data[:-1], qualities, register_data[-1], solvency)
+                        register_data.insert(-1, qualities)
+                        tenant = Tenant(*register_data, solvency)
+                        user = SayNoToHostelBot.controller.register_tenant(tenant)
                     elif 'landlord' in register_finish:
-                        user = SayNoToHostelBot.controller.register_landlord(callback_query.from_user.id,
-                                                                             *register_data,
-                                                                             callback_query.from_user.username)
+                        landlord = Landlord(*register_data, callback_query.from_user.username)
+                        user = SayNoToHostelBot.controller.register_landlord(landlord)
                     else:
                         raise ValueError('Invalid param to callback')
 
@@ -301,38 +309,89 @@ async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext)
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
 
+# ==============================================
+# Show flats
+# ==============================================
+
+
+async def show_flat(chat_id: int, flat: Flat, photos: list[str]) -> list[types.Message]:
+    flat_messages: list[types.Message] = []
+
+    if photos[:-1]:
+        media = types.MediaGroup()
+        for photo in photos[:-1]:
+            media.attach_photo(types.InputFile(photo))
+        flat_messages += await SayNoToHostelBot.bot.send_media_group(chat_id, media=media)
+
+    owner = SayNoToHostelBot.controller.get_landlord(flat.owner_id)
+    username = owner.username
+    info = f'Владелец: {owner.full_name}'
+    if username:
+        info += f' (@{username})'
+    info += (f'\nТелефон: {owner.phone}\nЦена: {flat.price} ₽\nПлощадь: {flat.square} м²\nАдрес: {flat.address}'
+             f'\nБлижайшее метро: {flat.metro}\nЭтаж: {flat.floor}/{flat.max_floor}')
+
+    if photos[-1]:
+        await SayNoToHostelBot.bot.send_photo(chat_id, types.InputFile(photos[-1]), caption=info)
+        flat_messages.append(await SayNoToHostelBot.bot.send_message(chat_id, f'Описание: {flat.description}'))
+    else:
+        info += f'\nОписание: {flat.description}'
+        flat_messages.append(await SayNoToHostelBot.bot.send_message(chat_id, info))
+
+    return flat_messages
+
+
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_flats')
-async def show_flats(message: types.Message):
+async def show_flats(message: types.Message, state: FSMContext):
     flats, flat_photos = SayNoToHostelBot.controller.get_flats()
-    last_message = None
-    for flat, photos in zip(flats, flat_photos):
-        if photos[:-1]:
-            media = types.MediaGroup()
-            for photo in photos[:-1]:
-                media.attach_photo(types.InputFile(photo))
-            await SayNoToHostelBot.bot.send_media_group(message.chat.id, media=media)
+    flat, photos = flats[0], flat_photos[0]
+    flat_messages = await show_flat(message.chat.id, flat, photos)
 
-        owner = SayNoToHostelBot.controller.get_landlord(flat.owner_id)
-        username = owner.username
-        info = f'Владелец: {owner.full_name}'
-        if username:
-            info += f' (@{username})'
-        info += (f'\nТелефон: {owner.phone}\nЦена: {flat.price} ₽\nПлощадь: {flat.square} м²\nАдрес: {flat.address}'
-                 f'\nБлижайшее метро: {flat.metro}\nЭтаж: {flat.floor}/{flat.max_floor}')
+    if flat_messages:
+        async with state.proxy() as data:
+            data['message'] = flat_messages
+            data['flats'] = (flats, flat_photos)
+            data['cur_flat'] = 0
+        await PaginationStates.PAGINATION_STATE.set()
+        await flat_messages[0].edit_reply_markup(reply_markup=kb.get_pagination_keyboard())
 
-        if photos[-1:]:
-            await SayNoToHostelBot.bot.send_photo(message.chat.id, types.InputFile(photos[-1]), caption=info)
-            last_message = await SayNoToHostelBot.bot.send_message(message.chat.id, f'Описание: {flat.description}')
-        else:
-            info += f'\nОписание: {flat.description}'
-            last_message = await SayNoToHostelBot.bot.send_message(message.from_user.id, info)
 
-    # await RegisterTenantStates.SEX_STATE.set()
-    # await SayNoToHostelBot.bot.send_message(message.from_user.id, '=' * 10,
-    #                                                   reply_markup=kb.get_pagination_keyboard())
-    if last_message:
-        await last_message.edit_reply_markup(reply_markup=kb.get_pagination_keyboard())
+@SayNoToHostelBot.dispatcher.callback_query_handler(state=PaginationStates.PAGINATION_STATE, text_contains='pagination')
+async def paginate_flats(callback_query: types.CallbackQuery, state: FSMContext):
+    match callback_query.data:
+        case 'pagination_left':
+            async with state.proxy() as data:
+                data['cur_flat'] -= 1 if data['cur_flat'] > 0 else 0
+                cur_flat: int = data['cur_flat']
+                flat_messages: list[types.Message] = data['message']
+                flats, flat_photos = data['flats']
 
+                for message in flat_messages:
+                    await message.delete()
+                await show_flat(callback_query.from_user.id, flats[cur_flat], flat_photos[cur_flat])
+
+        case 'pagination_right':
+            async with state.proxy() as data:
+                flat_messages: list[types.Message] = data['message']
+                flats, flat_photos = data['flats']
+                data['cur_flat'] += 1 if data['cur_flat'] < len(flats) - 1 else 0
+                cur_flat: int = data['cur_flat']
+
+                for message in flat_messages:
+                    await message.delete()
+                await show_flat(callback_query.from_user.id, flats[cur_flat], flat_photos[cur_flat])
+                
+        case 'pagination_cancel':
+            await state.finish()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
+
+        case _:
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+
+
+# ==============================================
+# Add flats
+# ==============================================
 
 async def add_flat_form(user_id: int):
     await SayNoToHostelBot.bot.send_message(user_id, 'Введите данные о квартире:',

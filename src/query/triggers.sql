@@ -38,13 +38,13 @@ FOR EACH ROW
 EXECUTE PROCEDURE public.delete_flat_photos();
 
 
--- trigger to delete neighborhoods before deleting tenant
-CREATE OR REPLACE FUNCTION public.delete_tenant_neighborhoods ()
+-- trigger to delete neighborhoods and goods before deleting tenant
+CREATE OR REPLACE FUNCTION public.delete_tenant_dependencies ()
 RETURNS TRIGGER AS
 $$
 BEGIN
-    DELETE FROM public.neighborhood
-    WHERE tenant_id = old.id;
+    DELETE FROM public.neighborhood WHERE tenant_id = old.id;
+    DELETE FROM public.goods WHERE owner_id = old.id;
     return old;
 END;
 $$
@@ -55,4 +55,4 @@ DROP TRIGGER IF EXISTS delete_tenant on public.tenant;
 CREATE TRIGGER delete_tenant
 BEFORE DELETE on public.tenant
 FOR EACH ROW
-EXECUTE PROCEDURE public.delete_tenant_neighborhoods();
+EXECUTE PROCEDURE public.delete_tenant_dependencies();

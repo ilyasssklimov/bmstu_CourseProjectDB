@@ -66,7 +66,7 @@ class SayNoToHostelBot:
 
     @classmethod
     def close_db(cls):
-        del cls.database
+        cls.database.disconnect_db()
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='start')

@@ -43,6 +43,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             EType.NEIGHBORHOOD: self.controller.delete_neighborhood,
             EType.GOODS: self.controller.delete_goods
         }
+        self.clr_funcs = {
+            EType.TENANT: self.controller.delete_tenants,
+            EType.LANDLORD: self.controller.delete_landlords,
+            EType.FLAT: self.controller.delete_flats,
+            EType.NEIGHBORHOOD: self.controller.delete_neighborhoods,
+            EType.GOODS: self.controller.delete_goods
+        }
         self.sav_funcs = {
             EType.TENANT: self.__save_tenant_changes,
             EType.LANDLORD: self.__save_landlord_changes,
@@ -61,6 +68,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.table.itemChanged.connect(self.change_item)
         self.addBtn.clicked.connect(self.add_row)
         self.delBtn.clicked.connect(self.delete_row)
+        self.clrBtn.clicked.connect(self.clear_table)
         self.savBtn.clicked.connect(self.save_data)
         self.genBtn.clicked.connect(self.generate_data)
 
@@ -127,6 +135,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.table.removeRow(row)
                 self.upd_data.pop(row)
 
+    def clear_table(self):
+        if self.cur_entity == EType.NO_TYPE:
+            return
+
+        ans = QMessageBox.question(self, 'Удаление строки', 'Вы уверены, что хотите очистить таблицу?',
+                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if ans == QMessageBox.Yes:
+            if self.clr_funcs[self.cur_entity]():
+                self.get_entities(self.cur_entity)
+                QMessageBox.about(self, 'Успех', 'Вы успешно очистили текущую таблицу')
+            else:
+                QMessageBox.about(self, 'Ошибка', 'Произошла ошибка во время удаления')
+
     def generate_data(self):
         if self.cur_entity == EType.NO_TYPE:
             return
@@ -144,20 +165,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.lineEdit.setText('100')
         else:
             if self.cur_entity == EType.TENANT or self.cur_entity == EType.LANDLORD:
-                self.gen_data.generate_users(self.cur_entity, n)
-                QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {n} пользователей')
+                count = self.gen_data.generate_users(self.cur_entity, n)
+                QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {count} / {n} пользователей')
 
             elif self.cur_entity == EType.FLAT:
-                self.gen_data.parse_flats(MOSCOW_FLATS_URL, n)
-                QMessageBox.about(self, 'Успех', f'Вы успешно спарсили {n} квартир')
+                count = self.gen_data.parse_flats(MOSCOW_FLATS_URL, n)
+                QMessageBox.about(self, 'Успех', f'Вы успешно спарсили {count} / {n} квартир')
 
             elif self.cur_entity == EType.NEIGHBORHOOD:
-                self.gen_data.generate_neighborhoods(n)
-                QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {n} объявлений о соседстве')
+                count = self.gen_data.generate_neighborhoods(n)
+                QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {count} / {n} объявлений о соседстве')
 
             elif self.cur_entity == EType.GOODS:
-                self.gen_data.generate_goods(n)
-                QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {n} объявлений о товарах')
+                count = self.gen_data.generate_goods(n)
+                QMessageBox.about(self, 'Успех', f'Вы успешно сгенерировали {count} / {n} объявлений о товарах')
 
             self.get_entities(self.cur_entity)
 

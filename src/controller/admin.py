@@ -3,10 +3,12 @@ from src.model.flat import Flat
 from src.model.landlord import Landlord
 from src.model.tenant import Tenant
 from src.model.neighborhood import Neighborhood
+from src.model.goods import Goods
 from src.repository.tenant import TenantRepository
 from src.repository.landlord import LandlordRepository
 from src.repository.flat import FlatRepository
 from src.repository.neighborhood import NeighborhoodRepository
+from src.repository.goods import GoodsRepository
 
 
 class AdminController:
@@ -15,6 +17,7 @@ class AdminController:
         self.__landlord_repo = LandlordRepository(db)
         self.__flat_repo = FlatRepository(db)
         self.__neighborhood_repo = NeighborhoodRepository(db)
+        self.__goods_repo = GoodsRepository(db)
 
     # tenant methods
     def get_tenants(self) -> tuple[list[str], list[Tenant]]:
@@ -93,3 +96,21 @@ class AdminController:
     def delete_neighborhood(self, neighborhood_id: int) -> Neighborhood:
         del_neighborhood = self.__neighborhood_repo.delete_neighborhood(neighborhood_id)
         return del_neighborhood
+
+    # goods methods
+    def get_goods(self) -> (list[str], list[Goods]):
+        headers = Goods().get_names()
+        goods = self.__goods_repo.get_goods()
+        return headers, goods
+
+    def add_goods(self, goods: Goods) -> Goods:
+        new_goods = self.__goods_repo.add_goods(goods)
+        return new_goods
+
+    def update_goods(self, goods: Goods) -> Goods:
+        upd_goods = self.__goods_repo.update_goods(goods)
+        return upd_goods
+
+    def delete_goods(self, goods_id: int) -> Goods:
+        del_goods = self.__goods_repo.delete_goods(goods_id)
+        return del_goods

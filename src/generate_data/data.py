@@ -24,9 +24,10 @@ class DataGenerator:
         self.__goods_repo = GoodsRepository(db)
 
         self.faker = Faker('ru_RU')
-        self.__tenant_ids = [tenant.id for tenant in self.__tenant_repo.get_tenants()]
 
-    def generate_users(self, user_type: EType, n: int = 100):
+    def generate_users(self, user_type: EType, n: int = 100) -> int:
+        en_faker = Faker()
+        count = 0
         for i in range(n):
             user_id = randint(*cfg.USER_ID_RANGE)
             full_name = self.faker.name()
@@ -38,38 +39,57 @@ class DataGenerator:
                 qualities = self.faker.text(50)
                 solvency = choice([True, False])
                 tenant = Tenant(user_id, full_name, sex, city, qualities, age, solvency)
-                self.__tenant_repo.add_tenant(tenant)
+                if self.__tenant_repo.add_tenant(tenant):
+                    count += 1
             elif user_type == EType.LANDLORD:
-                en_faker = Faker()
                 rating = round(uniform(*cfg.LANDLORD_RATING_RANGE), 1)
                 phone = cfg.PHONE_CODE + ''.join([str(randint(0, 9)) for _ in range(10)])
                 username = en_faker.user_name()
                 landlord = Landlord(user_id, full_name, city, rating, age, phone, username)
-                self.__landlord_repo.add_landlord(landlord)
+                if self.__landlord_repo.add_landlord(landlord):
+                    count += 1
             else:
                 raise ValueError('User type can be TENANT or LANDLORD')
 
+        return count
+
     def parse_flats(self, url: str, n: int = 100):
         parser_flats = ParserFlats(self.__db)
-        parser_flats.add_flats(url, n)
+        return parser_flats.add_flats(url, n)
 
-    def generate_neighborhoods(self, n: int = 100):
+    def generate_neighborhoods(self, n: int = 100) -> int:
+        tenant_ids = [tenant.id for tenant in self.__tenant_repo.get_tenants()]
+        if not tenant_ids:
+            return 0
+
+        count = 0
         for i in range(n):
-            tenant_id = random.choice(self.__tenant_ids)
+            tenant_id = random.choice(tenant_ids)
             neighbors = randint(*cfg.NEIGHBOR_RANGE)
             price = randint(*cfg.NEIGHBORHOOD_PRICE_RANGE)
             place = self.faker.address()
             sex = choice(['M', 'F', 'N'])
             preferences = self.faker.text(50)
             neighborhood = Neighborhood(-1, tenant_id, neighbors, price, place, sex, preferences)
-            self.__neighborhood_repo.add_neighborhood(neighborhood)
+            if self.__neighborhood_repo.add_neighborhood(neighborhood):
+                count += 1
 
-    def generate_goods(self, n: int = 100):
+        return count
+
+    def generate_goods(self, n: int = 100) -> int:
+        tenant_ids = [tenant.id for tenant in self.__tenant_repo.get_tenants()]
+        if not tenant_ids:
+            return 0
+
+        count = 0
         for i in range(n):
-            owner_id = random.choice(self.__tenant_ids)
+            owner_id = random.choice(tenant_ids)
             name = self.faker.text(25)
             price = randint(*cfg.GOODS_PRICE_RANGE)
             condition = choice(['E', 'G', 'S', 'U', 'T'])
             bargain = choice([True, False])
             goods = Goods(-1, owner_id, name, price, condition, bargain)
-            self.__goods_repo.add_goods(goods)
+            if self.__goods_repo.add_goods(goods):
+                count += 1
+
+        return count

@@ -75,9 +75,9 @@ class ParserFlats:
 
         return flats
 
-    def add_flats(self, url: str, n: int = 100):
+    def add_flats(self, url: str, n: int = 100) -> int:
         if n <= 0:
-            return
+            return 0
 
         cur_page = 1
         count_flats = 0
@@ -98,3 +98,5 @@ class ParserFlats:
                 count_flats += 1
 
             cur_page += 1
+
+        return count_flats

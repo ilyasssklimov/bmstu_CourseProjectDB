@@ -8,9 +8,15 @@ class FlatRepository:
         self.__db = db
 
     def get_flats(self) -> list[Flat]:
-        flats = [Flat(*flat) for flat in self.__db.get_flats()]
-        flats.sort(key=lambda flat: flat.id)
-        return flats
+        try:
+            flats = [Flat(*flat) for flat in self.__db.get_flats()]
+            flats.sort(key=lambda flat: flat.id)
+            return flats
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting flats')
+
+        return []
 
     def delete_flat(self, flat_id: int) -> Flat:
         try:
@@ -21,6 +27,16 @@ class FlatRepository:
             logging.error(f'Some error while deleting flat with id = {flat_id}')
 
         return Flat()
+
+    def delete_flats(self) -> list[Flat]:
+        try:
+            del_flats = [Flat(*flat) for flat in self.__db.delete_flats()]
+            return del_flats
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while deleting flats')
+
+        return []
 
     def add_flat(self, flat: Flat) -> Flat:
         try:
@@ -51,3 +67,13 @@ class FlatRepository:
             logging.error(f'Some error while adding photo to flat with id = {flat_id}')
 
         return ''
+
+    def get_photos(self, flat_id: int) -> list[str]:
+        try:
+            photos = self.__db.get_photos(flat_id)
+            return photos
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting photos of flat with id = {flat_id}')
+
+        return []

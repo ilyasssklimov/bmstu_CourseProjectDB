@@ -8,9 +8,15 @@ class TenantRepository:
         self.__db = db
 
     def get_tenants(self) -> list[Tenant]:
-        tenants = [Tenant(*tenant) for tenant in self.__db.get_tenants()]
-        tenants.sort(key=lambda tenant: tenant.id)
-        return tenants
+        try:
+            tenants = [Tenant(*tenant) for tenant in self.__db.get_tenants()]
+            tenants.sort(key=lambda tenant: tenant.id)
+            return tenants
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting tenants')
+
+        return []
 
     def add_tenant(self, tenant: Tenant) -> Tenant:
         try:
@@ -40,6 +46,16 @@ class TenantRepository:
             logging.error(f'Some error while deleting tenant with id = {tenant_id}')
 
         return Tenant()
+
+    def delete_tenants(self) -> list[Tenant]:
+        try:
+            del_tenants = [Tenant(tenant) for tenant in self.__db.delete_tenants()]
+            return del_tenants
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while deleting tenants')
+
+        return []
 
     def check_tenant(self, tenant_id: int) -> bool:
         logging.info(f'Checking tenant with id = {tenant_id}')

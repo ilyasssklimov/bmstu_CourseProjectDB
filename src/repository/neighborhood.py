@@ -8,9 +8,15 @@ class NeighborhoodRepository:
         self.__db = db
 
     def get_neighborhoods(self) -> list[Neighborhood]:
-        neighborhoods = [Neighborhood(*neighborhood) for neighborhood in self.__db.get_neighborhoods()]
-        neighborhoods.sort(key=lambda neighborhood: neighborhood.id)
-        return neighborhoods
+        try:
+            neighborhoods = [Neighborhood(*neighborhood) for neighborhood in self.__db.get_neighborhoods()]
+            neighborhoods.sort(key=lambda neighborhood: neighborhood.id)
+            return neighborhoods
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting neighborhoods')
+
+        return []
 
     def delete_neighborhood(self, neighborhood_id: int) -> Neighborhood:
         try:
@@ -21,6 +27,16 @@ class NeighborhoodRepository:
             logging.error(f'Some error while deleting neighborhood with id = {neighborhood_id}')
 
         return Neighborhood()
+
+    def delete_neighborhoods(self) -> list[Neighborhood]:
+        try:
+            del_neighborhoods = [Neighborhood(neighborhood) for neighborhood in self.__db.delete_neighborhoods()]
+            return del_neighborhoods
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while deleting neighborhoods')
+
+        return []
 
     def add_neighborhood(self, neighborhood: Neighborhood) -> Neighborhood:
         try:

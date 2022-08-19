@@ -77,6 +77,13 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def delete_tenants(self):
+        """
+        Delete tenants
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def check_tenant(self, tenant_id: int):
         """
         Check by id if tenant exists in database
@@ -118,6 +125,14 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         """
         Delete landlord by id
         """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def delete_landlords(self):
+        """
+        Delete landlords
+        """
+        raise NotImplementedError
 
     @abc.abstractmethod
     def check_landlord(self, landlord_id: int):
@@ -178,6 +193,13 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def delete_flats(self):
+        """
+        Delete flats
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def update_flat(self, flat_id: int, owner_id: int, price: int, rooms: int, square: float, address: str, metro: str,
                     floor: int, max_floor: int, description: str):
         """
@@ -222,6 +244,13 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def delete_neighborhoods(self):
+        """
+        Delete neighborhoods
+        """
+        raise NotImplementedError
+
     # goods methods
     @abc.abstractmethod
     def add_goods(self, owner_id: int, name: str, price: int, condition: str, bargain: bool):
@@ -253,9 +282,18 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @dispatch(int)
     @abc.abstractmethod
     def delete_goods(self, goods_id: int):
         """
         Delete goods by id
+        """
+        raise NotImplementedError
+
+    @dispatch()
+    @abc.abstractmethod
+    def delete_goods(self):
+        """
+        Delete goods
         """
         raise NotImplementedError

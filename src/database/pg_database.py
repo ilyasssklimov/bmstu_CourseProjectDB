@@ -90,6 +90,13 @@ class PgDatabase(BaseDatabase):
         logging.info(f'Delete tenant with id = {tenant_id}')
         return tenant
 
+    def delete_tenants(self):
+        query = '''DELETE FROM public.tenant;'''
+        tenants = self.get_tenants()
+        self.execute(query)
+        logging.info(f'Delete all tenants')
+        return tenants
+
     def check_tenant(self, tenant_id: int):
         query = f'''SELECT * FROM public.tenant WHERE id = {tenant_id}'''
         tenants = self.select(query)
@@ -132,6 +139,13 @@ class PgDatabase(BaseDatabase):
         self.execute(query)
         logging.info(f'Delete landlord with id = {landlord_id}')
         return landlord
+
+    def delete_landlords(self):
+        query = '''DELETE FROM public.landlord;'''
+        landlords = self.get_landlords()
+        self.execute(query)
+        logging.info(f'Delete all landlords')
+        return landlords
 
     def check_landlord(self, landlord_id: int):
         query = f'''SELECT * FROM public.landlord WHERE id = {landlord_id}'''
@@ -182,10 +196,16 @@ class PgDatabase(BaseDatabase):
     def delete_flat(self, flat_id: int):
         query = f'''DELETE FROM public.flat WHERE id = {flat_id};'''
         flat = self.get_flat(flat_id)
-        photos = self.delete_photos(flat_id)
         self.execute(query)
         logging.info(f'Delete flat with id = {flat_id}')
-        return flat, photos
+        return flat
+
+    def delete_flats(self):
+        query = f'''DELETE FROM public.flat;'''
+        flats = self.get_flats()
+        self.execute(query)
+        logging.info(f'Delete all flats')
+        return flats
 
     def update_flat(self, flat_id: int, owner_id: int, price: int, rooms: int, square: float, address: str, metro: str,
                     floor: int, max_floor: int, description: str):
@@ -238,6 +258,13 @@ class PgDatabase(BaseDatabase):
         logging.info(f'Delete neighborhood with id = {neighborhood_id}')
         return neighborhood
 
+    def delete_neighborhoods(self):
+        query = f'''DELETE FROM public.neighborhood;'''
+        neighborhoods = self.get_neighborhoods()
+        self.execute(query)
+        logging.info('Delete all neighborhoods')
+        return neighborhoods
+
     # goods methods
     def add_goods(self, owner_id: int, name: str, price: int, condition: str, bargain: bool):
         query = f'''
@@ -271,9 +298,18 @@ class PgDatabase(BaseDatabase):
         logging.info(f'Update goods with id = \'{goods_id}\'')
         return goods_id, owner_id, name, price, condition, bargain
 
+    @dispatch(int)
     def delete_goods(self, goods_id: int):
         query = f'''DELETE FROM public.goods WHERE id = {goods_id};'''
         goods = self.get_goods(goods_id)
         self.execute(query)
         logging.info(f'Delete goods with id = {goods_id}')
+        return goods
+
+    @dispatch()
+    def delete_goods(self):
+        query = f'''DELETE FROM public.goods;'''
+        goods = self.get_goods()
+        self.execute(query)
+        logging.info('Delete all goods')
         return goods

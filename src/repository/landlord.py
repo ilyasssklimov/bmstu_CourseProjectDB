@@ -8,9 +8,25 @@ class LandlordRepository:
         self.__db = db
 
     def get_landlords(self) -> list[Landlord]:
-        landlords = [Landlord(*landlord) for landlord in self.__db.get_landlords()]
-        landlords.sort(key=lambda landlord: landlord.id)
-        return landlords
+        try:
+            landlords = [Landlord(*landlord) for landlord in self.__db.get_landlords()]
+            landlords.sort(key=lambda landlord: landlord.id)
+            return landlords
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting landlords')
+
+        return []
+
+    def get_landlord(self, landlord_id: int) -> Landlord:
+        try:
+            landlord = self.__db.get_landlord(landlord_id)
+            return landlord
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting landlord with id = {landlord_id}')
+
+        return Landlord()
 
     def delete_landlord(self, landlord_id: int) -> Landlord:
         try:
@@ -21,6 +37,16 @@ class LandlordRepository:
             logging.error(f'Some error while deleting landlord with id = {landlord_id}')
 
         return Landlord()
+
+    def delete_landlords(self) -> list[Landlord]:
+        try:
+            del_landlords = [Landlord(*landlord) for landlord in self.__db.delete_landlords()]
+            return del_landlords
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while deleting landlords')
+
+        return []
 
     def add_landlord(self, landlord: Landlord) -> Landlord:
         try:

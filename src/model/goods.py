@@ -20,6 +20,6 @@ class Goods(BaseModel):
             self.price == other.price and
             self.condition == other.condition and
             ((not self.bargain and other.bargain == 'null') or
-             str(self.solvency).lower() == str(other.solvency).lower())
+             str(self.bargain).lower() == str(other.bargain).lower())
         )
 

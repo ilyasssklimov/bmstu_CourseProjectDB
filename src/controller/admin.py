@@ -1,3 +1,4 @@
+from multipledispatch import dispatch
 from src.database.database import BaseDatabase
 from src.model.flat import Flat
 from src.model.landlord import Landlord
@@ -37,6 +38,10 @@ class AdminController:
         del_tenant = self.__tenant_repo.delete_tenant(tenant_id)
         return del_tenant
 
+    def delete_tenants(self) -> list[Tenant]:
+        del_tenants = self.__tenant_repo.delete_tenants()
+        return del_tenants
+
     def check_tenant(self, tenant_id: int) -> bool:
         return self.__tenant_repo.check_tenant(tenant_id)
 
@@ -57,6 +62,10 @@ class AdminController:
     def delete_landlord(self, landlord_id: int) -> Landlord:
         del_landlord = self.__landlord_repo.delete_landlord(landlord_id)
         return del_landlord
+
+    def delete_landlords(self) -> list[Landlord]:
+        del_landlords = self.__landlord_repo.delete_landlords()
+        return del_landlords
 
     def check_landlord(self, landlord_id: int) -> bool:
         return self.__landlord_repo.check_landlord(landlord_id)
@@ -79,6 +88,10 @@ class AdminController:
         del_flat = self.__flat_repo.delete_flat(flat_id)
         return del_flat
 
+    def delete_flats(self) -> list[Flat]:
+        del_flats = self.__flat_repo.delete_flats()
+        return del_flats
+
     # neighborhood methods
     def get_neighborhoods(self) -> (list[str], list[Neighborhood]):
         headers = Neighborhood().get_names()
@@ -97,6 +110,10 @@ class AdminController:
         del_neighborhood = self.__neighborhood_repo.delete_neighborhood(neighborhood_id)
         return del_neighborhood
 
+    def delete_neighborhoods(self) -> list[Neighborhood]:
+        del_neighborhoods = self.__neighborhood_repo.delete_neighborhoods()
+        return del_neighborhoods
+
     # goods methods
     def get_goods(self) -> (list[str], list[Goods]):
         headers = Goods().get_names()
@@ -111,6 +128,12 @@ class AdminController:
         upd_goods = self.__goods_repo.update_goods(goods)
         return upd_goods
 
+    @dispatch(int)
     def delete_goods(self, goods_id: int) -> Goods:
         del_goods = self.__goods_repo.delete_goods(goods_id)
+        return del_goods
+
+    @dispatch()
+    def delete_goods(self) -> Goods:
+        del_goods = self.__goods_repo.delete_goods()
         return del_goods

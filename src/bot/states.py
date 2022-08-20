@@ -28,6 +28,7 @@ class RegisterLandlordStates(SayNoToHostelStates):
 class AddFlatStates(SayNoToHostelStates):
     START_STATE = State()
     PRICE_STATE = State()
+    ROOMS_STATE = State()
     SQUARE_STATE = State()
     ADDRESS_STATE = State()
     METRO_STATE = State()
@@ -36,5 +37,10 @@ class AddFlatStates(SayNoToHostelStates):
     PHOTO_STATE = State()
 
 
-class PaginationStates(SayNoToHostelStates):
+class ShowFlatsStates(SayNoToHostelStates):
     PAGINATION_STATE = State()
+    START_STATE = State()
+    PRICE_STATE = State()
+    ROOMS_STATE = State()
+    SQUARE_STATE = State()
+    METRO_STATE = State()

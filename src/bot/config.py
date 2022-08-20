@@ -60,9 +60,21 @@ FLAT_FIELDS = {
     'price': 'Цена',
     'rooms': 'Комнаты',
     'square': 'Площадь',
+    'address': 'Адрес'
+}
+ALL_FLAT_FIELDS = {
+    'price': 'Цена',
+    'rooms': 'Комнаты',
+    'square': 'Площадь',
     'address': 'Адрес',
     'metro': 'Ближайшее метро',
     'floor': 'Этаж',
     'max_floor': 'Максимальный этаж',
     'description': 'Описание'
+}
+FILTER_FLAT_FIELDS = {
+    'price': 'Цена',
+    'rooms': 'Комнаты',
+    'square': 'Площадь',
+    'metro': 'Метро'
 }

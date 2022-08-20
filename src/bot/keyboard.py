@@ -58,6 +58,7 @@ def get_register_landlord_keyboard():
 def get_add_flat_keyboard():
     add_flat_keyboard = InlineKeyboardMarkup()
     price_btn = InlineKeyboardButton('Цена', callback_data='add_flat_price')
+    rooms_btn = InlineKeyboardButton('Цена', callback_data='add_flat_rooms')
     square_btn = InlineKeyboardButton('Площадь', callback_data='add_flat_square')
     address_btn = InlineKeyboardButton('Адрес', callback_data='add_flat_address')
     floor_btn = InlineKeyboardButton('Этаж', callback_data='add_flat_floor')
@@ -86,3 +87,26 @@ def get_pagination_keyboard():
     pagination_keyboard.add(cancel_btn)
 
     return pagination_keyboard
+
+
+'''
+def get_show_flat_filter_keyboard():
+    show_flat_keyboard = InlineKeyboardMarkup()
+    price_btn = InlineKeyboardButton('Цена', callback_data='add_flat_price')
+    square_btn = InlineKeyboardButton('Площадь', callback_data='add_flat_square')
+    address_btn = InlineKeyboardButton('Адрес', callback_data='add_flat_address')
+    floor_btn = InlineKeyboardButton('Этаж', callback_data='add_flat_floor')
+    metro_btn = InlineKeyboardButton('Ближайшее метро', callback_data='add_flat_metro')
+    description_btn = InlineKeyboardButton('Описание', callback_data='add_flat_description')
+    photo_btn = InlineKeyboardButton('Добавить фото', callback_data='add_flat_photo')
+    finish_btn = InlineKeyboardButton('Добавить квартиру', callback_data='add_flat_finish')
+    exit_btn = InlineKeyboardButton('Прервать добавление', callback_data='add_flat_exit')
+    add_flat_keyboard.row(price_btn, square_btn)
+    add_flat_keyboard.row(address_btn, floor_btn)
+    add_flat_keyboard.row(metro_btn, description_btn)
+    add_flat_keyboard.add(photo_btn)
+    add_flat_keyboard.add(finish_btn)
+    add_flat_keyboard.add(exit_btn)
+
+    return add_flat_keyboard
+'''

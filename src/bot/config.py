@@ -50,10 +50,8 @@ LANDLORD_FIELDS = {
 ALL_LANDLORD_FIELDS = {
     'name': 'Имя',
     'city': 'Город',
-    'rating': 'Рейтинг',
     'age': 'Возраст',
-    'phone': 'Телефон',
-    'username': 'Имя пользователя'
+    'phone': 'Телефон'
 }
 
 FLAT_FIELDS = {

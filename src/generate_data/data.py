@@ -1,9 +1,9 @@
-import random
-import src.generate_data.config as cfg
 from faker import Faker
+import random
 from random import randint, choice, uniform
 from src.bot.config import EntityType as EType
 from src.database.database import BaseDatabase
+import src.generate_data.config as cfg
 from src.generate_data.flat import ParserFlats
 from src.model.goods import Goods
 from src.model.landlord import Landlord

@@ -10,7 +10,7 @@ class NeighborhoodRepository:
     def get_neighborhoods(self) -> list[Neighborhood]:
         try:
             neighborhoods = [Neighborhood(*neighborhood) for neighborhood in self.__db.get_neighborhoods()]
-            neighborhoods.sort(key=lambda neighborhood: neighborhood.id)
+            neighborhoods.sort(key=lambda neighborhood: neighborhood.id, reverse=True)
             return neighborhoods
         except Exception as e:
             logging.error(e)

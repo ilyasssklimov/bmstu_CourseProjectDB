@@ -20,7 +20,7 @@ class LandlordRepository:
 
     def get_landlord(self, landlord_id: int) -> Landlord:
         try:
-            landlord = self.__db.get_landlord(landlord_id)
+            landlord = Landlord(*self.__db.get_landlord(landlord_id))
             return landlord
         except Exception as e:
             logging.error(e)

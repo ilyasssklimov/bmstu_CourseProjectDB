@@ -1,4 +1,5 @@
 import logging
+from multipledispatch import dispatch
 from src.database.database import BaseDatabase
 from src.model.flat import Flat
 
@@ -7,14 +8,28 @@ class FlatRepository:
     def __init__(self, db: BaseDatabase):
         self.__db = db
 
+    @dispatch()
     def get_flats(self) -> list[Flat]:
         try:
             flats = [Flat(*flat) for flat in self.__db.get_flats()]
-            flats.sort(key=lambda flat: flat.id)
+            flats.sort(key=lambda flat: flat.id, reverse=True)
             return flats
         except Exception as e:
             logging.error(e)
             logging.error(f'Some error while getting flats')
+
+        return []
+
+    @dispatch(tuple[int, int], tuple[int, int], tuple[float, float], list[str])
+    def get_flats(self, price: tuple[int, int], rooms: tuple[int, int], square: tuple[float, float],
+                  metro: list[str]) -> list[Flat]:
+        try:
+            flats = [Flat(*flat) for flat in self.__db.get_flats(price, rooms, square, metro)]
+            flats.sort(key=lambda flat: flat.id, reverse=True)
+            return flats
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting flats by filters')
 
         return []
 

@@ -11,7 +11,7 @@ class GoodsRepository:
     def get_goods(self) -> list[Goods]:
         try:
             goods = [Goods(*goods) for goods in self.__db.get_goods()]
-            goods.sort(key=lambda g: g.id)
+            goods.sort(key=lambda g: g.id, reverse=True)
             return goods
         except Exception as e:
             logging.error(e)

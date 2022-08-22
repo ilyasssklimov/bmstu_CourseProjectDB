@@ -165,9 +165,27 @@ class PgDatabase(BaseDatabase):
         flat_id = self.select('''SELECT CURRVAL('flat_id_seq');''')[0][0]
         return flat_id, owner_id, price, square, address, metro, floor, max_floor, description
 
+    @dispatch()
     def get_flats(self):
         query = f'''SELECT * FROM public.flat'''
         logging.info('Get all flats')
+        return self.select(query)
+
+    @dispatch(tuple[int, int], tuple[int, int], tuple[float, float], list[str])
+    def get_flats(self, price: tuple[int, int], rooms: tuple[int, int], square: tuple[float, float], metro: list[str]):
+        query = f'''SELECT * FROM public.flat'''
+
+        conditions = ''
+        conditions += f'''price BETWEEN {price[0]} AND {price[1]} AND ''' if price else ''
+        conditions += f'''rooms BETWEEN {rooms[0]} AND {rooms[1]} AND ''' if rooms else ''
+        conditions += f'''square BETWEEN {square[0]} AND {square[1]} AND ''' if square else ''
+        conditions = conditions.rstrip('AND ') if not metro else (
+                conditions + 'metro IN (' + ', '.join([f'\'{station}\'' for station in metro]) + ')'
+        )
+        if conditions:
+            query += 'WHERE ' + conditions
+
+        logging.info('Get flats by filters')
         return self.select(query)
 
     def add_photo(self, flat_id: int, photo: str):

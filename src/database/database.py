@@ -150,10 +150,19 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @dispatch()
     @abc.abstractmethod
     def get_flats(self):
         """
         Get all flats
+        """
+        raise NotImplementedError
+
+    @dispatch(tuple[int, int], tuple[int, int], tuple[float, float], list[str])
+    @abc.abstractmethod
+    def get_flats(self, price: tuple[int, int], rooms: tuple[int, int], square: tuple[float, float], metro: list[str]):
+        """
+        Get flats by filters
         """
         raise NotImplementedError
 

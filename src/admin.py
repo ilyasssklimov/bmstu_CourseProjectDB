@@ -10,9 +10,10 @@ from src.logger.config import TargetType
 def main():
     sys.path.append('.')
     init_logger(TargetType.ADMIN)
+    database = PgDatabase(DB_DEFAULT_PARAMS)
 
     app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow(PgDatabase(DB_DEFAULT_PARAMS))
+    window = MainWindow(database)
     window.show()
     sys.exit(app.exec())
 

@@ -101,7 +101,8 @@ def get_flats_filter_keyboard():
     finish_btn = InlineKeyboardButton('Найти квартиры', callback_data='show_flats_finish')
     exit_btn = InlineKeyboardButton('Прервать поиск', callback_data='show_flats_exit')
 
-    show_flat_keyboard.row(price_btn, rooms_btn, square_btn)
+    show_flat_keyboard.row(price_btn, rooms_btn)
+    show_flat_keyboard.add(square_btn)
     show_flat_keyboard.add(metro_btn)
     show_flat_keyboard.add(finish_btn)
     show_flat_keyboard.add(exit_btn)

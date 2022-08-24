@@ -105,10 +105,19 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @dispatch(int)
     @abc.abstractmethod
     def get_landlord(self, landlord_id: int):
         """
         Get landlord by id
+        """
+        raise NotImplementedError
+
+    @dispatch(str)
+    @abc.abstractmethod
+    def get_landlord(self, landlord_name: str):
+        """
+        Get landlord by name
         """
         raise NotImplementedError
 

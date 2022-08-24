@@ -117,9 +117,16 @@ class PgDatabase(BaseDatabase):
         logging.info('Get all landlords from DB')
         return self.select(query)
 
+    @dispatch(int)
     def get_landlord(self, landlord_id: int):
         query = f'''SELECT * FROM public.landlord WHERE id = {landlord_id}'''
         logging.info(f'Get landlord with id = {landlord_id}')
+        return self.select(query)[0]
+
+    @dispatch(str)
+    def get_landlord(self, landlord_name: str):
+        query = f'''SELECT * FROM public.landlord WHERE full_name = {landlord_name}'''
+        logging.info(f'Get landlord with name = {landlord_name}')
         return self.select(query)[0]
 
     def update_landlord(self, landlord_id: int, full_name: str, city: str, rating: float, age: int,

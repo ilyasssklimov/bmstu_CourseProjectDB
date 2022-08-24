@@ -17,6 +17,9 @@ class BaseModel:
     def get_names(self):
         return list(self._args.keys())
 
+    def get_params_dict(self):
+        return self._args
+
     def __getitem__(self, item):
         if item in self._args:
             return self._args[item]

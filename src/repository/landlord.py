@@ -1,4 +1,5 @@
 import logging
+from multipledispatch import dispatch
 from src.database.database import BaseDatabase
 from src.model.landlord import Landlord
 
@@ -18,6 +19,7 @@ class LandlordRepository:
 
         return []
 
+    @dispatch(int)
     def get_landlord(self, landlord_id: int) -> Landlord:
         try:
             landlord = Landlord(*self.__db.get_landlord(landlord_id))
@@ -25,6 +27,17 @@ class LandlordRepository:
         except Exception as e:
             logging.error(e)
             logging.error(f'Some error while getting landlord with id = {landlord_id}')
+
+        return Landlord()
+
+    @dispatch(str)
+    def get_landlord(self, landlord_name: str) -> Landlord:
+        try:
+            landlord = Landlord(*self.__db.get_landlord(landlord_name))
+            return landlord
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting landlord with name = {landlord_name}')
 
         return Landlord()
 

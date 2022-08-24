@@ -108,3 +108,14 @@ def get_flats_filter_keyboard():
     show_flat_keyboard.add(exit_btn)
 
     return show_flat_keyboard
+
+
+def get_landlord_info_keyboard():
+    get_landlord_keyboard = InlineKeyboardMarkup()
+    rating_btn = InlineKeyboardButton('Поставить оценку', callback_data='get_landlord_rating')
+    exit_btn = InlineKeyboardButton('Отмена', callback_data='get_landlord_cancel')
+
+    get_landlord_keyboard.add(rating_btn)
+    get_landlord_keyboard.add(exit_btn)
+
+    return get_landlord_keyboard

@@ -1,4 +1,5 @@
 from src.controller.guest import GuestController
+from src.model.landlord import Landlord
 from src.model.flat import Flat
 
 
@@ -14,3 +15,10 @@ class TenantController(GuestController):
         flats = self._flat_repo.get_flats_filters(price, rooms, square, metro)
         photos = [self._flat_repo.get_photos(flat.id) for flat in flats]
         return flats, photos
+
+    def get_landlord(self, landlord_name: str) -> Landlord:
+        return self._landlord_repo.get_landlord(landlord_name)
+
+    def update_landlord(self, landlord: Landlord) -> Landlord:
+        upd_landlord = self._landlord_repo.update_landlord(landlord)
+        return upd_landlord

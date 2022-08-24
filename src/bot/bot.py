@@ -7,7 +7,9 @@ from typing import Type
 import src.bot.config as cfg
 from src.bot.config import API_TOKEN, IMG_PATH, EntityType as EType
 from src.bot.message import MESSAGE_START, MESSAGE_HELP
-from src.bot.states import RegisterTenantStates, RegisterLandlordStates, AddFlatStates, ShowFlatsStates
+from src.bot.states import (
+    RegisterTenantStates, RegisterLandlordStates, AddFlatStates, ShowFlatsStates, GetLandlordInfoStates
+)
 from src.database.config import RolesDB
 from src.database.database import BaseDatabase
 from src.controller.guest import GuestController
@@ -85,7 +87,7 @@ async def send_help(message: types.Message):
     await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
 
 
-async def get_info_from_kb(state: FSMContext, fields: dict[str, str]) -> str:
+async def get_info_from_state(state: FSMContext, fields: dict[str, str]) -> str:
     if state:
         async with state.proxy() as data:
             state_data = data
@@ -116,7 +118,7 @@ async def register_form(user_id: int, user_type: EType, state: FSMContext = None
     else:
         raise ValueError('Invalid type of user')
 
-    info = await get_info_from_kb(state, fields)
+    info = await get_info_from_state(state, fields)
     await SayNoToHostelBot.bot.send_message(user_id, info, reply_markup=keyboard)
 
 
@@ -366,7 +368,7 @@ async def show_flat(chat_id: int, flat: Flat, photos: list[str]) -> list[types.M
 
 
 async def show_flat_form(flat_id: int, state: FSMContext):
-    info = await get_info_from_kb(state, cfg.FILTER_FLAT_FIELDS)
+    info = await get_info_from_state(state, cfg.FILTER_FLAT_FIELDS)
     await SayNoToHostelBot.bot.send_message(flat_id, info, reply_markup=kb.get_flats_filter_keyboard())
 
 
@@ -537,7 +539,7 @@ async def paginate_flats(callback_query: types.CallbackQuery, state: FSMContext)
 # ==============================================
 
 async def add_flat_form(flat_id: int, state: FSMContext):
-    info = await get_info_from_kb(state, cfg.ALL_FLAT_FIELDS)
+    info = await get_info_from_state(state, cfg.ALL_FLAT_FIELDS)
     await SayNoToHostelBot.bot.send_message(flat_id, info, reply_markup=kb.get_add_flat_keyboard())
 
 
@@ -721,6 +723,84 @@ async def input_photo(message: types.Message, state: FSMContext):
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы ввели что-то неверное, '
                                                                       'для окончания напишите stop')
 
+
+# ==============================================
+# Get landlord info
+# ==============================================
+
+
+@SayNoToHostelBot.dispatcher.message_handler(commands='get_landlord_info')
+async def get_landlord_info(message: types.Message):
+    if SayNoToHostelBot.role != RolesDB.TENANT and SayNoToHostelBot.role != RolesDB.LANDLORD:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы')
+    else:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Введите имя арендодателя')
+        await GetLandlordInfoStates.NAME_STATE.set()
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=GetLandlordInfoStates.NAME_STATE)
+async def input_landlord_name(message: types.Message, state: FSMContext):
+    landlord = SayNoToHostelBot.controller.get_landlord(message.text)
+    if not landlord:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Арендодатель с данным именем не зарегистрирован')
+        await state.finish()
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
+    else:
+        async with state.proxy() as data:
+            data.update(landlord.get_params_dict())
+            data['landlord'] = landlord
+            data['name'] = landlord.full_name
+            data['old_rating'] = landlord.rating
+
+        info = await get_info_from_state(state, cfg.LANDLORD_FIELDS)
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, info,
+                                                reply_markup=kb.get_landlord_info_keyboard())
+        await GetLandlordInfoStates.START_STATE.set()
+
+
+@SayNoToHostelBot.dispatcher.callback_query_handler(
+    state=GetLandlordInfoStates.START_STATE, text_contains='get_landlord')
+async def rate_landlord(callback_query: types.CallbackQuery, state: FSMContext):
+    match callback_query.data:
+        case 'get_landlord_rating':
+            await GetLandlordInfoStates.RATING_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                    'Введите оценку (целое число от 1 до 10)')
+
+        case 'get_landlord_cancel':
+            async with state.proxy() as data:
+                landlord = data['landlord']
+                landlord.set_rating(data['rating'])
+            SayNoToHostelBot.controller.update_landlord(landlord)
+            await state.finish()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
+
+        case _:
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=GetLandlordInfoStates.RATING_STATE)
+async def input_floor(message: types.Message, state: FSMContext):
+    try:
+        rating = int(message.text)
+        assert 1 <= rating <= 10
+    except ValueError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Должно быть введено целое число')
+    except AssertionError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Число должно быть от 1 до 10')
+    else:
+        async with state.proxy() as data:
+            data['rating'] = round((data['old_rating'] + rating) / 2, 1)
+    finally:
+        info = await get_info_from_state(state, cfg.LANDLORD_FIELDS)
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, info,
+                                                reply_markup=kb.get_landlord_info_keyboard())
+        await GetLandlordInfoStates.START_STATE.set()
+
+
+# ==============================================
+# Last handler
+# ==============================================
 
 @SayNoToHostelBot.dispatcher.message_handler()
 async def last_handler(message: types.Message):

@@ -44,3 +44,9 @@ class ShowFlatsStates(SayNoToHostelStates):
     ROOMS_STATE = State()
     SQUARE_STATE = State()
     METRO_STATE = State()
+
+
+class GetLandlordInfoStates(SayNoToHostelStates):
+    NAME_STATE = State()
+    START_STATE = State()
+    RATING_STATE = State()

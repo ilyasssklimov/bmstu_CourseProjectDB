@@ -125,7 +125,8 @@ class PgDatabase(BaseDatabase):
 
     @dispatch(str)
     def get_landlord(self, landlord_name: str):
-        query = f'''SELECT * FROM public.landlord WHERE full_name = {landlord_name}'''
+        query = f'''SELECT * FROM public.landlord WHERE username = '{landlord_name}' OR 
+                                                        full_name = '{landlord_name}' '''
         logging.info(f'Get landlord with name = {landlord_name}')
         return self.select(query)[0]
 

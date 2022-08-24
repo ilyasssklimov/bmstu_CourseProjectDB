@@ -731,8 +731,8 @@ async def input_photo(message: types.Message, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='get_landlord_info')
 async def get_landlord_info(message: types.Message):
-    if SayNoToHostelBot.role != RolesDB.TENANT and SayNoToHostelBot.role != RolesDB.LANDLORD:
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы')
+    if SayNoToHostelBot.role != RolesDB.TENANT:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы как арендатор')
     else:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Введите имя арендодателя')
         await GetLandlordInfoStates.NAME_STATE.set()

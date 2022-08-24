@@ -178,10 +178,10 @@ class PgDatabase(BaseDatabase):
         conditions += f'''rooms BETWEEN {rooms[0]} AND {rooms[1]} AND ''' if rooms else ''
         conditions += f'''square BETWEEN {square[0]} AND {square[1]} AND ''' if square else ''
         conditions = conditions.rstrip('AND ') if not metro else (
-                conditions + 'metro IN (' + ', '.join([f'\'{station}\'' for station in metro]) + ')'
+                conditions + 'metro IN (' + ', '.join([f'\'{station.strip()}\'' for station in metro]) + ')'
         )
         if conditions:
-            query += 'WHERE ' + conditions
+            query += ' WHERE ' + conditions
 
         logging.info('Get flats by filters')
         return self.select(query)

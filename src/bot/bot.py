@@ -76,9 +76,6 @@ class SayNoToHostelBot:
 @SayNoToHostelBot.dispatcher.message_handler(commands='start')
 async def send_welcome(message: types.Message):
     user_id = message.from_user.id
-    SayNoToHostelBot.check_tenant(user_id)
-    SayNoToHostelBot.check_landlord(user_id)
-
     logging.info('Starting bot')
     await SayNoToHostelBot.bot.send_message(user_id, MESSAGE_START)
 
@@ -128,13 +125,13 @@ async def send_register(message: types.Message):
     user_id = message.from_user.id
     if message.text.endswith('tenant'):
         if SayNoToHostelBot.check_tenant(user_id):
-            await SayNoToHostelBot.bot.send_message(user_id, 'Вы уже зарегистрированы как арендатор')
+            await SayNoToHostelBot.bot.send_message(user_id, 'Вы вошли как арендатор')
         else:
             await RegisterTenantStates.START_STATE.set()
             await register_form(user_id, EType.TENANT)
     elif message.text.endswith('landlord'):
         if SayNoToHostelBot.check_landlord(user_id):
-            await SayNoToHostelBot.bot.send_message(user_id, 'Вы уже зарегистрированы как арендодатель')
+            await SayNoToHostelBot.bot.send_message(user_id, 'Вы вошли как арендодатель')
         else:
             await RegisterLandlordStates.START_STATE.set()
             await register_form(user_id, EType.LANDLORD)
@@ -375,8 +372,8 @@ async def show_flat_form(flat_id: int, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_flats_filters')
 async def show_flats_filters_start(message: types.Message, state: FSMContext):
-    if SayNoToHostelBot.role != RolesDB.TENANT:
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы как арендатор')
+    if SayNoToHostelBot.role != RolesDB.TENANT and SayNoToHostelBot.role != RolesDB.LANDLORD:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы')
     else:
         async with state.proxy() as data:
             data['metro'] = []
@@ -389,21 +386,46 @@ async def add_flat_filter(callback_query: types.CallbackQuery, state: FSMContext
     match callback_query.data:
         case 'show_flats_price':
             await ShowFlatsStates.PRICE_STATE.set()
-            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите цену в формате')
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите через пробел минимальную '
+                                                                                 'и максимальную цену')
 
         case 'show_flats_rooms':
             await ShowFlatsStates.ROOMS_STATE.set()
-            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите количество комнат')
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите через пробел минимальное '
+                                                                                 'и максимальное количество комнат')
 
         case 'show_flats_square':
             await ShowFlatsStates.SQUARE_STATE.set()
-            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите площадь')
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите через пробел минимальную '
+                                                                                 'и максимальную площадь')
 
         case 'show_flats_metro':
             await ShowFlatsStates.METRO_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите ближайшие станции метро '
+                                                                                 'через запятую')
 
         case 'show_flats_finish':
-            pass
+            async with state.proxy() as data:
+                price = (tuple(data['price'].split(' - '))) if 'price' in data else ()
+                rooms = (tuple(data['rooms'].split(' - '))) if 'rooms' in data else ()
+                square = (tuple(data['square'].split(' - '))) if 'square' in data else ()
+                metro = data['metro'] if 'metro' in data else []
+
+                flats, flat_photos = SayNoToHostelBot.controller.get_flats_filters(price, rooms, square, metro)
+                await state.finish()
+
+            if not flats:
+                return
+
+            flat, photos = flats[0], flat_photos[0]
+            flat_messages = await show_flat(callback_query.from_user.id, flat, photos)
+
+            if flat_messages:
+                async with state.proxy() as data:
+                    data['message'] = flat_messages
+                    data['flats'] = (flats, flat_photos)
+                    data['cur_flat'] = 0
+                await ShowFlatsStates.PAGINATION_STATE.set()
 
         case 'show_flats_exit':
             await state.finish()
@@ -411,6 +433,51 @@ async def add_flat_filter(callback_query: types.CallbackQuery, state: FSMContext
 
         case _:
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+
+
+async def input_show_flat_range(message: types.Message, state: FSMContext, field: str,
+                                nums_type: Type[int] | Type[float]):
+    try:
+        if nums_type == Type[float]:
+            min_field, max_field = map(float, message.text.split())
+        else:
+            min_field, max_field = map(int, message.text.split())
+        assert 0 < min_field <= max_field
+    except ValueError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Должно быть введено два числа через пробел')
+    except AssertionError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Два числа должны быть положительными '
+                                                                      '(при этом первое не больше второго)')
+    else:
+        async with state.proxy() as data:
+            data[field] = f'{min_field} - {max_field}'
+    finally:
+        await ShowFlatsStates.START_STATE.set()
+        await show_flat_form(message.from_user.id, state)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=ShowFlatsStates.PRICE_STATE)
+async def input_price(message: types.Message, state: FSMContext):
+    await input_show_flat_range(message, state, 'price', Type[int])
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=ShowFlatsStates.ROOMS_STATE)
+async def input_rooms(message: types.Message, state: FSMContext):
+    await input_show_flat_range(message, state, 'rooms', Type[int])
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=ShowFlatsStates.SQUARE_STATE)
+async def input_square(message: types.Message, state: FSMContext):
+    await input_show_flat_range(message, state, 'square', Type[float])
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=ShowFlatsStates.METRO_STATE)
+async def input_metro(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['metro'] = message.text.split(',')
+
+    await ShowFlatsStates.START_STATE.set()
+    await show_flat_form(message.from_user.id, state)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_flats')
@@ -639,7 +706,6 @@ async def input_floor(message: types.Message, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.PHOTO_STATE, content_types='photo')
 async def input_photo(message: types.Message, state: FSMContext):
-    print(message.photo[-1])
     photo_name = os.path.join(IMG_PATH, f'{message.photo[-1].file_unique_id}.jpg')
     await message.photo[-1].download(destination_file=photo_name)
     async with state.proxy() as data:

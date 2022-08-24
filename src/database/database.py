@@ -5,312 +5,146 @@ from src.database.config import RolesDB
 
 class BaseDatabase(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def connect_db(self, db_params: dict[str, str]):
-        """
-        Connect to database by params
-        """
-        raise NotImplementedError
+    def connect_db(self, db_params: dict[str, str]): ...
 
     @abc.abstractmethod
-    def disconnect_db(self):
-        """
-        Disconnect from database
-        """
-        raise NotImplementedError
+    def disconnect_db(self): ...
 
     @abc.abstractmethod
-    def set_role(self, role: RolesDB):
-        """
-        Set role to use database
-        """
-        raise NotImplementedError
+    def set_role(self, role: RolesDB): ...
 
     @abc.abstractmethod
-    def execute(self, query: str):
-        """
-        Execute query
-        """
-        raise NotImplementedError
+    def execute(self, query: str): ...
 
     @abc.abstractmethod
-    def select(self, query: str):
-        """
-        Select by query
-        """
-        raise NotImplementedError
+    def select(self, query: str): ...
 
     # tenant methods
     @abc.abstractmethod
-    def add_tenant(self, user_id: int, full_name: str, sex: str, city: str, qualities: str, age: int, solvency: bool):
-        """
-        Add tenant to database
-        """
-        raise NotImplementedError
+    def add_tenant(self, user_id: int, full_name: str, sex: str, city: str, qualities: str,
+                   age: int, solvency: bool): ...
 
     @abc.abstractmethod
-    def get_tenants(self):
-        """
-        Get all tenants
-        """
-        raise NotImplementedError
+    def get_tenants(self): ...
 
     @abc.abstractmethod
-    def get_tenant(self, tenant_id: int):
-        """
-        Get tenant by id
-        """
-        raise NotImplementedError
+    def get_tenant(self, tenant_id: int): ...
 
     @abc.abstractmethod
-    def update_tenant(self, tenant_id: int, full_name: str, sex: str, city: str,
-                      qualities: str, age: int, solvency: bool):
-        """
-        Update tenant by id
-        """
-        raise NotImplementedError
+    def update_tenant(self, tenant_id: int, full_name: str, sex: str, city: str, qualities: str,
+                      age: int, solvency: bool): ...
 
     @abc.abstractmethod
-    def delete_tenant(self, tenant_id: int):
-        """
-        Delete tenant by id
-        """
-        raise NotImplementedError
+    def delete_tenant(self, tenant_id: int): ...
 
     @abc.abstractmethod
-    def delete_tenants(self):
-        """
-        Delete tenants
-        """
-        raise NotImplementedError
+    def delete_tenants(self): ...
 
     @abc.abstractmethod
-    def check_tenant(self, tenant_id: int):
-        """
-        Check by id if tenant exists in database
-        """
-        raise NotImplementedError
+    def check_tenant(self, tenant_id: int): ...
 
     # landlord methods
     @abc.abstractmethod
-    def add_landlord(self, user_id: int, full_name: str, city: str, rating: float, age: int, phone: str, username: str):
-        """
-        Add landlord to database
-        """
-        raise NotImplementedError
+    def add_landlord(self, user_id: int, full_name: str, city: str, rating: float, age: int,
+                     phone: str, username: str): ...
 
     @abc.abstractmethod
-    def get_landlords(self):
-        """
-        Get all landlords
-        """
-        raise NotImplementedError
+    def get_landlords(self): ...
 
     @dispatch(int)
     @abc.abstractmethod
-    def get_landlord(self, landlord_id: int):
-        """
-        Get landlord by id
-        """
-        raise NotImplementedError
+    def get_landlord(self, landlord_id: int): ...
 
     @dispatch(str)
     @abc.abstractmethod
-    def get_landlord(self, landlord_name: str):
-        """
-        Get landlord by name
-        """
-        raise NotImplementedError
+    def get_landlord(self, landlord_name: str): ...
 
     @abc.abstractmethod
     def update_landlord(self, landlord_id: int, full_name: str, city: str, rating: float, age: int,
-                        phone: str, username: str):
-        """
-        Update landlord by id
-        """
-        raise NotImplementedError
+                        phone: str, username: str): ...
 
     @abc.abstractmethod
-    def delete_landlord(self, landlord_id: int):
-        """
-        Delete landlord by id
-        """
-        raise NotImplementedError
+    def delete_landlord(self, landlord_id: int): ...
 
     @abc.abstractmethod
-    def delete_landlords(self):
-        """
-        Delete landlords
-        """
-        raise NotImplementedError
+    def delete_landlords(self): ...
 
     @abc.abstractmethod
-    def check_landlord(self, landlord_id: int):
-        """
-        Check by id if landlord exists in database
-        """
-        raise NotImplementedError
+    def check_landlord(self, landlord_id: int): ...
 
     # flat methods
     @abc.abstractmethod
     def add_flat(self, owner_id: int, price: int, rooms: int, square: float, address: str, metro: str,
-                 floor: int, max_floor: int, description: str):
-        """
-        Add flat to database
-        """
-        raise NotImplementedError
+                 floor: int, max_floor: int, description: str): ...
 
     @abc.abstractmethod
-    def get_flats(self):
-        """
-        Get all flats
-        """
-        raise NotImplementedError
+    def get_flats(self): ...
 
     @abc.abstractmethod
     def get_flats_filters(self, price: tuple[int, int], rooms: tuple[int, int], square: tuple[float, float],
-                          metro: list[str]):
-        """
-        Get flats by filters
-        """
-        raise NotImplementedError
+                          metro: list[str]): ...
 
     @abc.abstractmethod
-    def add_photo(self, flat_id: int, photo: str):
-        """
-        Add photo of flat
-        """
-        raise NotImplementedError
+    def add_photo(self, flat_id: int, photo: str): ...
 
     @abc.abstractmethod
-    def delete_photos(self, flat_id: int):
-        """
-        Delete photos of flat by id
-        """
-        raise NotImplementedError
+    def delete_photos(self, flat_id: int): ...
 
     @abc.abstractmethod
-    def get_photos(self, flat_id: int):
-        """
-        Get photos of flat by id
-        """
-        raise NotImplementedError
+    def get_photos(self, flat_id: int): ...
 
     @abc.abstractmethod
-    def get_flat(self, flat_id: int):
-        """
-        Get flat by id
-        """
-        raise NotImplementedError
+    def get_flat(self, flat_id: int): ...
 
     @abc.abstractmethod
-    def delete_flat(self, flat_id: int):
-        """
-        Delete flat by id
-        """
-        raise NotImplementedError
+    def delete_flat(self, flat_id: int): ...
 
     @abc.abstractmethod
-    def delete_flats(self):
-        """
-        Delete flats
-        """
-        raise NotImplementedError
+    def delete_flats(self): ...
 
     @abc.abstractmethod
     def update_flat(self, flat_id: int, owner_id: int, price: int, rooms: int, square: float, address: str, metro: str,
-                    floor: int, max_floor: int, description: str):
-        """
-        Update flat by id
-        """
-        raise NotImplementedError
+                    floor: int, max_floor: int, description: str): ...
 
     # neighborhood methods
     @abc.abstractmethod
-    def add_neighborhood(self, tenant_id: int, neighbors: int, price: int, place: str, sex: str, preferences: str):
-        """
-        Add neighborhood to database
-        """
-        raise NotImplementedError
+    def add_neighborhood(self, tenant_id: int, neighbors: int, price: int, place: str, sex: str, preferences: str): ...
 
     @abc.abstractmethod
-    def get_neighborhoods(self):
-        """
-        Get all neighborhoods
-        """
-        raise NotImplementedError
+    def get_neighborhoods(self): ...
 
     @abc.abstractmethod
-    def get_neighborhood(self, neighborhood_id: int):
-        """
-        Get neighborhood by id
-        """
-        raise NotImplementedError
+    def get_neighborhood(self, neighborhood_id: int): ...
 
     @abc.abstractmethod
     def update_neighborhood(self, neighborhood_id: int, tenant_id: int, neighbors: int, price: int,
-                            place: str, sex: str, preferences: str):
-        """
-        Update neighborhood by id
-        """
-        raise NotImplementedError
+                            place: str, sex: str, preferences: str): ...
 
     @abc.abstractmethod
-    def delete_neighborhood(self, neighborhood_id: int):
-        """
-        Delete neighborhood by id
-        """
-        raise NotImplementedError
+    def delete_neighborhood(self, neighborhood_id: int): ...
 
     @abc.abstractmethod
-    def delete_neighborhoods(self):
-        """
-        Delete neighborhoods
-        """
-        raise NotImplementedError
+    def delete_neighborhoods(self): ...
 
     # goods methods
     @abc.abstractmethod
-    def add_goods(self, owner_id: int, name: str, price: int, condition: str, bargain: bool):
-        """
-        Add goods to database
-        """
-        raise NotImplementedError
+    def add_goods(self, owner_id: int, name: str, price: int, condition: str, bargain: bool): ...
 
     @dispatch()
     @abc.abstractmethod
-    def get_goods(self):
-        """
-        Get all goods
-        """
-        raise NotImplementedError
+    def get_goods(self): ...
 
     @dispatch(int)
     @abc.abstractmethod
-    def get_goods(self, goods_id: int):
-        """
-        Get goods by id
-        """
-        raise NotImplementedError
+    def get_goods(self, goods_id: int): ...
 
     @abc.abstractmethod
-    def update_goods(self, goods_id: int, owner_id: int, name: str, price: int, condition: str, bargain: bool):
-        """
-        Update goods by id
-        """
-        raise NotImplementedError
+    def update_goods(self, goods_id: int, owner_id: int, name: str, price: int, condition: str, bargain: bool): ...
 
     @dispatch(int)
     @abc.abstractmethod
-    def delete_goods(self, goods_id: int):
-        """
-        Delete goods by id
-        """
-        raise NotImplementedError
+    def delete_goods(self, goods_id: int): ...
 
     @dispatch()
     @abc.abstractmethod
-    def delete_goods(self):
-        """
-        Delete goods
-        """
-        raise NotImplementedError
+    def delete_goods(self): ...

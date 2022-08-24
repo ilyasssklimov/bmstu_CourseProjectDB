@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import QTableWidgetItem, QAbstractItemView, QMessageBox
 from src.admin_panel.design import Ui_MainWindow
 from src.bot.config import EntityType as EType
 from src.controller.admin import AdminController
-from src.database.config import RolesDB
 from src.database.database import BaseDatabase
 from src.generate_data.config import MOSCOW_FLATS_URL
 from src.generate_data.data import DataGenerator
@@ -25,7 +24,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.upd_data: list[Tenant | Landlord | Flat | Neighborhood | Goods] = []
 
         self.__db = database
-        self.__db.set_role(RolesDB.ADMIN)
         self.controller: AdminController = AdminController(self.__db)
         self.gen_data: DataGenerator = DataGenerator(self.__db)
 
@@ -299,7 +297,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     raise IndexError
                 assert adjusted_flat.price > 0 and adjusted_flat.rooms > 0 and adjusted_flat.square > 0
 
-                assert adjusted_flat.floor > 0 and adjusted_flat.max_floor > 0
+                assert adjusted_flat.floor >= 0 and adjusted_flat.max_floor >= 0
                 if adjusted_flat.floor > adjusted_flat.max_floor:
                     raise AttributeError
 

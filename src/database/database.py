@@ -150,7 +150,6 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @dispatch()
     @abc.abstractmethod
     def get_flats(self):
         """
@@ -158,9 +157,9 @@ class BaseDatabase(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @dispatch(tuple[int, int], tuple[int, int], tuple[float, float], list[str])
     @abc.abstractmethod
-    def get_flats(self, price: tuple[int, int], rooms: tuple[int, int], square: tuple[float, float], metro: list[str]):
+    def get_flats_filters(self, price: tuple[int, int], rooms: tuple[int, int], square: tuple[float, float],
+                          metro: list[str]):
         """
         Get flats by filters
         """

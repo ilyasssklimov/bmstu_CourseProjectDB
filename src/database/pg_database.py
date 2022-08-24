@@ -1,14 +1,13 @@
 import logging
 from multipledispatch import dispatch
 import psycopg2 as ps
-from src.database.config import DB_TABLES_FILE, DB_CONSTRAINTS_FILE, DB_ROLES_FILE, DB_TRIGGER_FILE, RolesDB
+from src.database.config import DB_TABLES_FILE, DB_CONSTRAINTS_FILE, DB_ROLES_FILE, DB_TRIGGERS_FILE, RolesDB
 from src.database.database import BaseDatabase
 
 
 class PgDatabase(BaseDatabase):
     def __init__(self, db_params: dict[str, str]):
-        self.__connection = None
-        self.__cursor = None
+        self.__connection, self.__cursor = None, None
         self.connect_db(db_params)
         self.execute_init_files()
 
@@ -16,7 +15,7 @@ class PgDatabase(BaseDatabase):
         self.execute_file(DB_TABLES_FILE)
         self.execute_file(DB_CONSTRAINTS_FILE)
         self.execute_file(DB_ROLES_FILE)
-        self.execute_file(DB_TRIGGER_FILE)
+        self.execute_file(DB_TRIGGERS_FILE)
 
     def connect_db(self, db_params: dict[str, str]):
         self.__connection = ps.connect(**db_params)
@@ -165,14 +164,13 @@ class PgDatabase(BaseDatabase):
         flat_id = self.select('''SELECT CURRVAL('flat_id_seq');''')[0][0]
         return flat_id, owner_id, price, square, address, metro, floor, max_floor, description
 
-    @dispatch()
     def get_flats(self):
         query = f'''SELECT * FROM public.flat'''
         logging.info('Get all flats')
         return self.select(query)
 
-    @dispatch(tuple[int, int], tuple[int, int], tuple[float, float], list[str])
-    def get_flats(self, price: tuple[int, int], rooms: tuple[int, int], square: tuple[float, float], metro: list[str]):
+    def get_flats_filters(self, price: tuple[int, int], rooms: tuple[int, int], square: tuple[float, float],
+                          metro: list[str]):
         query = f'''SELECT * FROM public.flat'''
 
         conditions = ''

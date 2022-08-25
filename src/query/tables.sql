@@ -82,3 +82,10 @@ CREATE TABLE IF NOT EXISTS public.likes_flat (
     tenant_id INTEGER,
     flat_id INTEGER
 );
+
+
+-- create table public.likes_flats
+CREATE TABLE IF NOT EXISTS public.likes_flat (
+    tenant_id INTEGER,
+    flat_id INTEGER
+);

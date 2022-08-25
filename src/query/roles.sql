@@ -53,6 +53,7 @@ GRANT SELECT ON public.landlord TO landlord;
 GRANT INSERT, SELECT ON public.flat TO landlord;
 GRANT USAGE, SELECT ON SEQUENCE flat_id_seq TO landlord;
 GRANT INSERT, SELECT ON public.flat_photo TO landlord;
+GRANT SELECT ON public.subscription_landlord TO landlord;
 
 -- create admin role
 SELECT public.delete_role('admin');

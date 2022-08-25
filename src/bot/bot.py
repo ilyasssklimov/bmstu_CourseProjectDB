@@ -339,7 +339,7 @@ async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext)
 # ==============================================
 
 
-async def show_flat(chat_id: int, flat: Flat, photos: list[str]) -> list[types.Message]:
+async def show_flat(chat_id: int, flat: Flat, photos: list[str], paginate: bool = False) -> list[types.Message]:
     flat_messages: list[types.Message] = []
 
     if photos[:-1]:
@@ -363,7 +363,8 @@ async def show_flat(chat_id: int, flat: Flat, photos: list[str]) -> list[types.M
         info += f'\nОписание: {flat.description}'
         flat_messages.append(await SayNoToHostelBot.bot.send_message(chat_id, info))
 
-    await flat_messages[-1].edit_reply_markup(reply_markup=kb.get_pagination_keyboard())
+    if paginate:
+        await flat_messages[-1].edit_reply_markup(reply_markup=kb.get_pagination_keyboard())
     return flat_messages
 
 
@@ -611,14 +612,25 @@ async def add_flat(callback_query: types.CallbackQuery, state: FSMContext):
                     new_flat = Flat(-1, owner_id, *flat_data, metro, floor, max_floor, description)
                     flat = SayNoToHostelBot.controller.add_flat(new_flat)
                     if flat:
+                        photos = []
                         for photo in data['photo']:
-                            get_photo = SayNoToHostelBot.controller.add_photo(flat.id, photo)
-                            if not get_photo:
+                            new_photo = SayNoToHostelBot.controller.add_photo(flat.id, photo)
+                            if not new_photo:
                                 await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                         'Во время добавления фото произошла ошибка')
+                            else:
+                                photos.append(new_photo)
+
                         await state.finish()
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Квартира успешно добавлена')
+
+                        tenants = SayNoToHostelBot.controller.get_tenants_subscription(owner_id)
+                        for tenant in tenants:
+                            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                    'Арендодатель, на которого вы подписаны, '
+                                                                    'добавил новую квартиру')
+                            await show_flat(tenant.id, flat, photos)
                     else:
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Во время добавления квартиры произошла ошибка')

@@ -1,5 +1,6 @@
 from src.controller.tenant import TenantController
 from src.model.flat import Flat
+from src.model.tenant import Tenant
 
 
 class LandlordController(TenantController):
@@ -10,3 +11,7 @@ class LandlordController(TenantController):
     def add_photo(self, flat_id: int, photo: str) -> str:
         photo = self._flat_repo.add_photo(flat_id, photo)
         return photo
+
+    def get_tenants_subscription(self, landlord_id: int) -> list[Tenant]:
+        tenants = self._landlord_repo.get_tenants_subscription(landlord_id)
+        return tenants

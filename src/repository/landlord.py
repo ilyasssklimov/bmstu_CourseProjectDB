@@ -2,6 +2,7 @@ import logging
 from multipledispatch import dispatch
 from src.database.database import BaseDatabase
 from src.model.landlord import Landlord
+from src.model.tenant import Tenant
 
 
 class LandlordRepository:
@@ -84,3 +85,13 @@ class LandlordRepository:
     def check_landlord(self, landlord_id: int) -> bool:
         logging.info(f'Checking landlord with id = {landlord_id}')
         return self.__db.check_landlord(landlord_id)
+
+    def get_tenants_subscription(self, landlord_id: int) -> list[Tenant]:
+        try:
+            tenants = [Tenant(*tenant) for tenant in self.__db.get_tenants_subscription(landlord_id)]
+            return tenants
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting tenants subscribed on landlord with id = {landlord_id}')
+
+        return []

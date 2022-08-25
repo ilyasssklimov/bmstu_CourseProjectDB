@@ -357,3 +357,11 @@ class PgDatabase(BaseDatabase):
         subscription = self.select(query)
         logging.info(f'Checking subscription (tenant_id = {tenant_id}, landlord_id = {landlord_id}')
         return bool(subscription)
+
+    def get_tenants_subscription(self, landlord_id: int):
+        query = f'''
+        SELECT * FROM public.tenant WHERE id IN (
+            SELECT tenant_id FROM public.subscription_landlord WHERE landlord_id = {landlord_id}
+        )'''
+        logging.info(f'Get tenants subscribed on landlord with id = {landlord_id}')
+        return self.select(query)

@@ -38,7 +38,7 @@ FOR EACH ROW
 EXECUTE PROCEDURE public.delete_flat_dependencies();
 
 
--- trigger to delete neighborhoods, goods, subscriptions, likes before deleting tenant
+-- trigger to delete neighborhoods, goods, subscriptions and likes before deleting tenant
 CREATE OR REPLACE FUNCTION public.delete_tenant_dependencies ()
 RETURNS TRIGGER AS
 $$
@@ -47,6 +47,7 @@ BEGIN
     DELETE FROM public.goods WHERE owner_id = old.id;
     DELETE FROM public.subscripition_landlord WHERE tenant_id = old.id;
     DELETE FROM public.likes_flat WHERE tenant_id = old.id;
+    DELETE FROM public.subscripition_flat WHERE tenant_id = old.id;
     return old;
 END;
 $$

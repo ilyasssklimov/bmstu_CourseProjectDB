@@ -257,28 +257,28 @@ SELECT public.create_constraint (
     'tenant',
     'subscription_landlord_tenant_id_fkey',
     'ALTER TABLE public.subscription_landlord ADD CONSTRAINT subscription_landlord_tenant_id_fkey' ||
-          ' FOREIGN KEY (tenant_id) REFERENCES public.tenant (id);'
+    ' FOREIGN KEY (tenant_id) REFERENCES public.tenant (id);'
 );
 
 SELECT public.create_constraint (
     'subscription_landlord',
     'subscription_landlord_tenant_id_check',
     'ALTER TABLE public.subscription_landlord ADD CONSTRAINT subscription_landlord_tenant_id_check' ||
-          ' CHECK (tenant_id IS NOT NULL);'
+    ' CHECK (tenant_id IS NOT NULL);'
 );
 
 SELECT public.create_constraint (
     'landlord',
     'subscription_landlord_id_fkey',
     'ALTER TABLE public.subscription_landlord ADD CONSTRAINT subscription_landlord_id_fkey' ||
-          ' FOREIGN KEY (landlord_id) REFERENCES public.landlord (id);'
+    ' FOREIGN KEY (landlord_id) REFERENCES public.landlord (id);'
 );
 
 SELECT public.create_constraint (
     'subscription_landlord',
     'subscription_landlord_id_check',
     'ALTER TABLE public.subscription_landlord ADD CONSTRAINT subscription_landlord_id_check' ||
-          ' CHECK (landlord_id IS NOT NULL);'
+    ' CHECK (landlord_id IS NOT NULL);'
 );
 
 
@@ -300,11 +300,48 @@ SELECT public.create_constraint (
     'flat',
     'likes_flat_id_fkey',
     'ALTER TABLE public.likes_flat ADD CONSTRAINT likes_flat_id_fkey' ||
-          ' FOREIGN KEY (flat_id) REFERENCES public.flat (id);'
+    ' FOREIGN KEY (flat_id) REFERENCES public.flat (id);'
 );
 
 SELECT public.create_constraint (
     'likes_flat',
     'likes_flat_id_check',
     'ALTER TABLE public.likes_flat ADD CONSTRAINT likes_flat_id_check CHECK (flat_id IS NOT NULL);'
+);
+
+
+-- create constraints to public.subscription_flat
+SELECT public.create_constraint (
+    'tenant',
+    'subscription_flat_tenant_id_fkey',
+    'ALTER TABLE public.subscription_flat ADD CONSTRAINT subscription_flat_tenant_id_fkey' ||
+    ' FOREIGN KEY (tenant_id) REFERENCES public.tenant (id);'
+);
+
+SELECT public.create_constraint (
+    'subscription_flat',
+    'subscription_flat_tenant_id_check',
+    'ALTER TABLE public.subscription_flat ADD CONSTRAINT subscription_flat_tenant_id_check' ||
+    ' CHECK (tenant_id IS NOT NULL);'
+);
+
+SELECT public.create_constraint(
+    'subscription_flat',
+    'subscription_flat_price_check',
+    'ALTER TABLE public.subscription_flat ADD CONSTRAINT subscription_flat_price_check' ||
+    ' CHECK (min_price <= max_price AND min_price >= 0);'
+);
+
+SELECT public.create_constraint(
+    'subscription_flat',
+    'subscription_flat_rooms_check',
+    'ALTER TABLE public.subscription_flat ADD CONSTRAINT subscription_flat_rooms_check' ||
+    ' CHECK (min_rooms <= max_rooms AND min_rooms >= 0);'
+);
+
+SELECT public.create_constraint(
+    'subscription_flat',
+    'subscription_flat_square_check',
+    'ALTER TABLE public.subscription_flat ADD CONSTRAINT subscription_flat_square_check' ||
+    ' CHECK (min_square <= max_square AND min_square >= 0);'
 );

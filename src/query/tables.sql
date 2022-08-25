@@ -84,8 +84,14 @@ CREATE TABLE IF NOT EXISTS public.likes_flat (
 );
 
 
--- create table public.likes_flats
-CREATE TABLE IF NOT EXISTS public.likes_flat (
+-- create table public.subscription_flat
+CREATE TABLE IF NOT EXISTS public.subscription_flat (
     tenant_id INTEGER,
-    flat_id INTEGER
+    min_price INTEGER,
+    max_price INTEGER,
+    min_rooms INTEGER,
+    max_rooms INTEGER,
+    min_square REAL,
+    max_square REAL,
+    metro TEXT
 );

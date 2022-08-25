@@ -154,3 +154,6 @@ class BaseDatabase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def unsubscribe_landlord(self, tenant_id: int, landlord_id: int): ...
+
+    @abc.abstractmethod
+    def check_subscription_landlord(self, tenant_id: int, landlord_id: int): ...

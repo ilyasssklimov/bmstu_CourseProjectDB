@@ -767,6 +767,31 @@ async def rate_landlord(callback_query: types.CallbackQuery, state: FSMContext):
             await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                     'Введите оценку (целое число от 1 до 10)')
 
+        case 'get_landlord_subscribe':
+            await GetLandlordInfoStates.SUBSCRIBE_STATE.set()
+            async with state.proxy() as data:
+                tenant_id = callback_query.from_user.id
+                landlord_id = data['landlord'].id
+                if not SayNoToHostelBot.controller.check_subscription_landlord(tenant_id, landlord_id):
+                    if SayNoToHostelBot.controller.subscribe_landlord(tenant_id, landlord_id):
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Вы успешно подписались на арендодателя')
+                    else:
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Во время подписки на арендодателя произошла ошибка')
+                else:
+                    if SayNoToHostelBot.controller.unsubscribe_landlord(tenant_id, landlord_id):
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Вы успешно отписались от арендодателя')
+                    else:
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Во время отписки от арендодателя произошла ошибка')
+
+            info = await get_info_from_state(state, cfg.LANDLORD_FIELDS)
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, info,
+                                                    reply_markup=kb.get_landlord_info_keyboard())
+            await GetLandlordInfoStates.START_STATE.set()
+
         case 'get_landlord_cancel':
             async with state.proxy() as data:
                 landlord = data['landlord']
@@ -780,7 +805,7 @@ async def rate_landlord(callback_query: types.CallbackQuery, state: FSMContext):
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=GetLandlordInfoStates.RATING_STATE)
-async def input_floor(message: types.Message, state: FSMContext):
+async def input_rating(message: types.Message, state: FSMContext):
     try:
         rating = int(message.text)
         assert 1 <= rating <= 10

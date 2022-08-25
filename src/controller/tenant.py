@@ -30,3 +30,7 @@ class TenantController(GuestController):
     def unsubscribe_landlord(self, tenant_id: int, landlord_id: int) -> bool:
         result = self._tenant_repo.unsubscribe_landlord(tenant_id, landlord_id)
         return result
+
+    def check_subscription_landlord(self, tenant_id: int, landlord_id: int) -> bool:
+        result = self._tenant_repo.check_subscription_landlord(tenant_id, landlord_id)
+        return result

@@ -80,3 +80,13 @@ class TenantRepository:
             logging.error('Some error while deleting subscription')
 
         return False
+
+    def check_subscription_landlord(self, tenant_id: int, landlord_id: int) -> bool:
+        try:
+            result = self.__db.check_subscription_landlord(tenant_id, landlord_id)
+            return result
+        except Exception as e:
+            logging.error(e)
+            logging.error('Some error while checking subscription')
+
+        return False

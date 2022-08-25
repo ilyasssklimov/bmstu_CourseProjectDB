@@ -350,3 +350,10 @@ class PgDatabase(BaseDatabase):
         DELETE FROM public.subscription_landlord WHERE tenant_id = {tenant_id} AND landlord_id = {landlord_id}'''
         self.execute(query)
         logging.info(f'Delete subscription of tenant with id = {tenant_id} to landlord with id = {landlord_id}')
+
+    def check_subscription_landlord(self, tenant_id: int, landlord_id: int):
+        query = f'''SELECT * FROM public.subscription_landlord 
+                    WHERE tenant_id = {tenant_id} AND landlord_id = {landlord_id}'''
+        subscription = self.select(query)
+        logging.info(f'Checking subscription (tenant_id = {tenant_id}, landlord_id = {landlord_id}')
+        return bool(subscription)

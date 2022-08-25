@@ -337,3 +337,16 @@ class PgDatabase(BaseDatabase):
         self.execute(query)
         logging.info('Delete all goods')
         return goods
+
+    def subscribe_landlord(self, tenant_id: int, landlord_id: int):
+        query = f'''
+        INSERT INTO public.subscription_landlord (tenant_id, landlord_id)
+        VALUES ({tenant_id}, {landlord_id})'''
+        self.execute(query)
+        logging.info(f'Add subscription of tenant with id = {tenant_id} to landlord with id = {landlord_id}')
+
+    def unsubscribe_landlord(self, tenant_id: int, landlord_id: int):
+        query = f'''
+        DELETE FROM public.subscription_landlord WHERE tenant_id = {tenant_id} AND landlord_id = {landlord_id}'''
+        self.execute(query)
+        logging.info(f'Delete subscription of tenant with id = {tenant_id} to landlord with id = {landlord_id}')

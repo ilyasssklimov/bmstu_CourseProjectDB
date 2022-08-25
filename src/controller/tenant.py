@@ -22,3 +22,11 @@ class TenantController(GuestController):
     def update_landlord(self, landlord: Landlord) -> Landlord:
         upd_landlord = self._landlord_repo.update_landlord(landlord)
         return upd_landlord
+
+    def subscribe_landlord(self, tenant_id: int, landlord_id: int) -> bool:
+        result = self._tenant_repo.subscribe_landlord(tenant_id, landlord_id)
+        return result
+
+    def unsubscribe_landlord(self, tenant_id: int, landlord_id: int) -> bool:
+        result = self._tenant_repo.unsubscribe_landlord(tenant_id, landlord_id)
+        return result

@@ -60,3 +60,23 @@ class TenantRepository:
     def check_tenant(self, tenant_id: int) -> bool:
         logging.info(f'Checking tenant with id = {tenant_id}')
         return self.__db.check_tenant(tenant_id)
+
+    def subscribe_landlord(self, tenant_id: int, landlord_id: int) -> bool:
+        try:
+            result = self.__db.subscribe_landlord(tenant_id, landlord_id)
+            return result
+        except Exception as e:
+            logging.error(e)
+            logging.error('Some error while adding subscription')
+
+        return False
+
+    def unsubscribe_landlord(self, tenant_id: int, landlord_id: int) -> bool:
+        try:
+            result = self.__db.unsubscribe_landlord(tenant_id, landlord_id)
+            return result
+        except Exception as e:
+            logging.error(e)
+            logging.error('Some error while deleting subscription')
+
+        return False

@@ -148,3 +148,9 @@ class BaseDatabase(metaclass=abc.ABCMeta):
     @dispatch()
     @abc.abstractmethod
     def delete_goods(self): ...
+
+    @abc.abstractmethod
+    def subscribe_landlord(self, tenant_id: int, landlord_id: int): ...
+
+    @abc.abstractmethod
+    def unsubscribe_landlord(self, tenant_id: int, landlord_id: int): ...

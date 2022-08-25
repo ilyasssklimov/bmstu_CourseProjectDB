@@ -1,10 +1,10 @@
--- trigger to delete flats before deleting landlord
-CREATE OR REPLACE FUNCTION public.delete_tenant_flats ()
+-- trigger to delete flats and subscriptions before deleting landlord
+CREATE OR REPLACE FUNCTION public.delete_landlord_dependencies ()
 RETURNS TRIGGER AS
 $$
 BEGIN
-    DELETE FROM public.flat
-    WHERE owner_id = old.id;
+    DELETE FROM public.flat WHERE owner_id = old.id;
+    DELETE FROM public.subscripition_landlord WHERE landlord_id = old.id;
     return old;
 END;
 $$
@@ -15,7 +15,7 @@ DROP TRIGGER IF EXISTS delete_landlord on public.landlord;
 CREATE TRIGGER delete_landlord
 BEFORE DELETE on public.landlord
 FOR EACH ROW
-EXECUTE PROCEDURE public.delete_tenant_flats();
+EXECUTE PROCEDURE public.delete_landlord_dependencies();
 
 
 -- trigger to delete flats photos before deleting flat
@@ -38,13 +38,14 @@ FOR EACH ROW
 EXECUTE PROCEDURE public.delete_flat_photos();
 
 
--- trigger to delete neighborhoods and goods before deleting tenant
+-- trigger to delete neighborhoods, goods and subscriptions before deleting tenant
 CREATE OR REPLACE FUNCTION public.delete_tenant_dependencies ()
 RETURNS TRIGGER AS
 $$
 BEGIN
     DELETE FROM public.neighborhood WHERE tenant_id = old.id;
     DELETE FROM public.goods WHERE owner_id = old.id;
+    DELETE FROM public.subscripition_landlord WHERE tenant_id = old.id;
     return old;
 END;
 $$

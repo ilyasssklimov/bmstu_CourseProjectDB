@@ -280,3 +280,31 @@ SELECT public.create_constraint (
     'ALTER TABLE public.subscription_landlord ADD CONSTRAINT subscription_landlord_id_check' ||
           ' CHECK (landlord_id IS NOT NULL);'
 );
+
+
+-- create constraints to public.likes_flat
+SELECT public.create_constraint (
+    'tenant',
+    'likes_flat_tenant_id_fkey',
+    'ALTER TABLE public.likes_flat ADD CONSTRAINT likes_flat_tenant_id_fkey' ||
+          ' FOREIGN KEY (tenant_id) REFERENCES public.tenant (id);'
+);
+
+SELECT public.create_constraint (
+    'likes_flat',
+    'likes_flat_tenant_id_check',
+    'ALTER TABLE public.likes_flat ADD CONSTRAINT likes_flat_tenant_id_check CHECK (tenant_id IS NOT NULL);'
+);
+
+SELECT public.create_constraint (
+    'flat',
+    'likes_flat_id_fkey',
+    'ALTER TABLE public.likes_flat ADD CONSTRAINT likes_flat_id_fkey' ||
+          ' FOREIGN KEY (flat_id) REFERENCES public.flat (id);'
+);
+
+SELECT public.create_constraint (
+    'likes_flat',
+    'likes_flat_id_check',
+    'ALTER TABLE public.likes_flat ADD CONSTRAINT likes_flat_id_check CHECK (flat_id IS NOT NULL);'
+);

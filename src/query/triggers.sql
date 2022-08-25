@@ -19,12 +19,12 @@ EXECUTE PROCEDURE public.delete_landlord_dependencies();
 
 
 -- trigger to delete flats photos before deleting flat
-CREATE OR REPLACE FUNCTION public.delete_flat_photos ()
+CREATE OR REPLACE FUNCTION public.delete_flat_dependencies ()
 RETURNS TRIGGER AS
 $$
 BEGIN
-    DELETE FROM public.flat_photo
-    WHERE flat_id = old.id;
+    DELETE FROM public.flat_photo WHERE flat_id = old.id;
+    DELETE FROM public.likes_flat WHERE flat_id = old.id;
     return old;
 END;
 $$
@@ -35,10 +35,10 @@ DROP TRIGGER IF EXISTS delete_flat on public.flat;
 CREATE TRIGGER delete_flat
 BEFORE DELETE on public.flat
 FOR EACH ROW
-EXECUTE PROCEDURE public.delete_flat_photos();
+EXECUTE PROCEDURE public.delete_flat_dependencies();
 
 
--- trigger to delete neighborhoods, goods and subscriptions before deleting tenant
+-- trigger to delete neighborhoods, goods, subscriptions, likes before deleting tenant
 CREATE OR REPLACE FUNCTION public.delete_tenant_dependencies ()
 RETURNS TRIGGER AS
 $$
@@ -46,6 +46,7 @@ BEGIN
     DELETE FROM public.neighborhood WHERE tenant_id = old.id;
     DELETE FROM public.goods WHERE owner_id = old.id;
     DELETE FROM public.subscripition_landlord WHERE tenant_id = old.id;
+    DELETE FROM public.likes_flat WHERE tenant_id = old.id;
     return old;
 END;
 $$

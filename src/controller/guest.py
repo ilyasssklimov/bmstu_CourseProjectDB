@@ -1,3 +1,4 @@
+from multipledispatch import dispatch
 from src.database.database import BaseDatabase
 from src.model.flat import Flat
 from src.model.tenant import Tenant
@@ -36,6 +37,7 @@ class GuestController:
         photos = [self._flat_repo.get_photos(flat.id) for flat in flats]
         return flats, photos
 
+    @dispatch(int)
     def get_landlord(self, landlord_id: int) -> Landlord:
         landlord = self._landlord_repo.get_landlord(landlord_id)
         return landlord

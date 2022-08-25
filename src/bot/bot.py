@@ -339,7 +339,7 @@ async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext)
 # ==============================================
 
 
-async def show_flat(chat_id: int, flat: Flat, photos: list[str], paginate: bool = False) -> list[types.Message]:
+async def show_flat(chat_id: int, flat: Flat, photos: list[str], paginate: bool = True) -> list[types.Message]:
     flat_messages: list[types.Message] = []
 
     if photos[:-1]:
@@ -527,6 +527,41 @@ async def paginate_flats(callback_query: types.CallbackQuery, state: FSMContext)
                 flat_messages = await show_flat(callback_query.from_user.id, flats[cur_flat], flat_photos[cur_flat])
                 data['message'] = flat_messages
 
+        case 'pagination_like':
+            async with state.proxy() as data:
+                tenant_id = callback_query.from_user.id
+                flats, photos = data['flats']
+                cur_flat = data['cur_flat']
+                flat, flat_photos = flats[cur_flat], photos[cur_flat]
+
+                if not SayNoToHostelBot.controller.check_like_flat(tenant_id, flat.id):
+                    tenants = SayNoToHostelBot.controller.get_likes_flat(tenant_id)
+                    cur_tenant = SayNoToHostelBot.controller.get_tenant(tenant_id)
+                    name = cur_tenant.full_name + (f' (@{cur_tenant.username})' if cur_tenant.username else '')
+                    for tenant in tenants:
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                f'Пользователь с именем {name} оценил квартиру')
+                        await show_flat(tenant.id, flat, flat_photos, False)
+
+                    if SayNoToHostelBot.controller.like_flat(tenant_id, flat.id):
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Вы успешно поставили отметку \'Нравится\' на '
+                                                                'данную квартиру')
+                    else:
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'При добавлении отметки "Нравится" произошла ошибка')
+                else:
+                    if SayNoToHostelBot.controller.unlike_flat(tenant_id, flat.id):
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Вы успешно убрали отметку \'Нравится\' на '
+                                                                'данную квартиру')
+                    else:
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'При удалении отметки "Нравится" произошла ошибка')
+
+                flat_messages = await show_flat(callback_query.from_user.id, flat, flat_photos)
+                data['message'] = flat_messages
+
         case 'pagination_cancel':
             await state.finish()
             await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
@@ -630,7 +665,7 @@ async def add_flat(callback_query: types.CallbackQuery, state: FSMContext):
                             await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                     'Арендодатель, на которого вы подписаны, '
                                                                     'добавил новую квартиру')
-                            await show_flat(tenant.id, flat, photos)
+                            await show_flat(tenant.id, flat, photos, False)
                     else:
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Во время добавления квартиры произошла ошибка')
@@ -780,7 +815,6 @@ async def rate_landlord(callback_query: types.CallbackQuery, state: FSMContext):
                                                     'Введите оценку (целое число от 1 до 10)')
 
         case 'get_landlord_subscribe':
-            await GetLandlordInfoStates.SUBSCRIBE_STATE.set()
             async with state.proxy() as data:
                 tenant_id = callback_query.from_user.id
                 landlord_id = data['landlord'].id
@@ -802,7 +836,6 @@ async def rate_landlord(callback_query: types.CallbackQuery, state: FSMContext):
             info = await get_info_from_state(state, cfg.LANDLORD_FIELDS)
             await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, info,
                                                     reply_markup=kb.get_landlord_info_keyboard())
-            await GetLandlordInfoStates.START_STATE.set()
 
         case 'get_landlord_cancel':
             async with state.proxy() as data:

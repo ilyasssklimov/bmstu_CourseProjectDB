@@ -50,4 +50,3 @@ class GetLandlordInfoStates(SayNoToHostelStates):
     NAME_STATE = State()
     START_STATE = State()
     RATING_STATE = State()
-    SUBSCRIBE_STATE = State()

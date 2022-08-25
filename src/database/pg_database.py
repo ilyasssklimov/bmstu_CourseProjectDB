@@ -365,3 +365,31 @@ class PgDatabase(BaseDatabase):
         )'''
         logging.info(f'Get tenants subscribed on landlord with id = {landlord_id}')
         return self.select(query)
+
+    def like_flat(self, tenant_id: int, flat_id: int):
+        query = f'''
+        INSERT INTO public.likes_flat (tenant_id, flat_id)
+        VALUES ({tenant_id}, {flat_id})'''
+        self.execute(query)
+        logging.info(f'Add like of tenant with id = {tenant_id} to flat with id = {flat_id}')
+
+    def unlike_flat(self, tenant_id: int, flat_id: int):
+        query = f'''
+        DELETE FROM public.likes_flat WHERE tenant_id = {tenant_id} AND flat_id = {flat_id}'''
+        self.execute(query)
+        logging.info(f'Delete like of tenant with id = {tenant_id} to flat with id = {flat_id}')
+
+    def check_like_flat(self, tenant_id: int, flat_id: int):
+        query = f'''SELECT * FROM public.likes_flat 
+                    WHERE tenant_id = {tenant_id} AND flat_id = {flat_id}'''
+        like = self.select(query)
+        logging.info(f'Checking like (tenant_id = {tenant_id}, flat_id = {flat_id}')
+        return bool(like)
+
+    def get_likes_flat(self, flat_id: int):
+        query = f'''
+        SELECT * FROM public.tenant WHERE id IN (
+            SELECT tenant_id FROM public.likes_flat WHERE flat_id = {flat_id}
+        )'''
+        logging.info(f'Get tenants liked flat with id = {flat_id}')
+        return self.select(query)

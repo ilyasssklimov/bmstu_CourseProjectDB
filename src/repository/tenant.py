@@ -90,3 +90,53 @@ class TenantRepository:
             logging.error('Some error while checking subscription')
 
         return False
+
+    def like_flat(self, tenant_id: int, flat_id: int) -> bool:
+        try:
+            result = self.__db.like_flat(tenant_id, flat_id)
+            return result
+        except Exception as e:
+            logging.error(e)
+            logging.error('Some error while adding like')
+
+        return False
+
+    def unlike_flat(self, tenant_id: int, flat_id: int) -> bool:
+        try:
+            result = self.__db.unlike_flat(tenant_id, flat_id)
+            return result
+        except Exception as e:
+            logging.error(e)
+            logging.error('Some error while deleting like')
+
+        return False
+
+    def check_like_flat(self, tenant_id: int, flat_id: int) -> bool:
+        try:
+            result = self.__db.check_like_flat(tenant_id, flat_id)
+            return result
+        except Exception as e:
+            logging.error(e)
+            logging.error('Some error while checking like')
+
+        return False
+
+    def get_likes_flat(self, flat_id: int) -> list[Tenant]:
+        try:
+            tenants = [Tenant(*tenant) for tenant in self.__db.get_likes_flat(flat_id)]
+            return tenants
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting tenants liked flat with id = {flat_id}')
+
+        return []
+
+    def get_tenant(self, tenant_id: int) -> Tenant:
+        try:
+            tenant = Tenant(*self.__db.get_tenant(tenant_id))
+            return tenant
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting tenant with id = {tenant_id}')
+
+        return Tenant()

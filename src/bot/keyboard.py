@@ -84,9 +84,11 @@ def get_pagination_keyboard():
     pagination_keyboard = InlineKeyboardMarkup()
     left_btn = InlineKeyboardButton('<<', callback_data='pagination_left')
     right_btn = InlineKeyboardButton('>>', callback_data='pagination_right')
+    like_flat = InlineKeyboardButton('Нравится / Не нравится', callback_data='pagination_like')
     cancel_btn = InlineKeyboardButton('Отменить', callback_data='pagination_cancel')
 
     pagination_keyboard.row(left_btn, right_btn)
+    pagination_keyboard.add(like_flat)
     pagination_keyboard.add(cancel_btn)
 
     return pagination_keyboard

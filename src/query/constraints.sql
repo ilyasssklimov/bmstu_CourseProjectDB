@@ -250,3 +250,33 @@ SELECT public.create_constraint(
     'ALTER TABLE public.goods ADD CONSTRAINT goods_condition_check CHECK ' ||
     '(condition IN (''E'', ''G'', ''S'', ''U'', ''T'') AND condition IS NOT NULL);'
 );
+
+
+-- create constraints to public.subscription_landlord
+SELECT public.create_constraint (
+    'tenant',
+    'subscription_landlord_tenant_id_fkey',
+    'ALTER TABLE public.subscription_landlord ADD CONSTRAINT subscription_landlord_tenant_id_fkey' ||
+          ' FOREIGN KEY (tenant_id) REFERENCES public.tenant (id);'
+);
+
+SELECT public.create_constraint (
+    'subscription_landlord',
+    'subscription_landlord_tenant_id_check',
+    'ALTER TABLE public.subscription_landlord ADD CONSTRAINT subscription_landlord_tenant_id_check' ||
+          ' CHECK (tenant_id IS NOT NULL);'
+);
+
+SELECT public.create_constraint (
+    'landlord',
+    'subscription_landlord_id_fkey',
+    'ALTER TABLE public.subscription_landlord ADD CONSTRAINT subscription_landlord_id_fkey' ||
+          ' FOREIGN KEY (landlord_id) REFERENCES public.landlord (id);'
+);
+
+SELECT public.create_constraint (
+    'subscription_landlord',
+    'subscription_landlord_id_check',
+    'ALTER TABLE public.subscription_landlord ADD CONSTRAINT subscription_landlord_id_check' ||
+          ' CHECK (landlord_id IS NOT NULL);'
+);

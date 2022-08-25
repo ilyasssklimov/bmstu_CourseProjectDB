@@ -68,3 +68,10 @@ CREATE TABLE IF NOT EXISTS public.goods (
     condition CHAR,
     bargain BOOLEAN
 );
+
+
+-- create table public.subscription_landlord
+CREATE TABLE IF NOT EXISTS public.subscription_landlord (
+    tenant_id INTEGER,
+    landlord_id INTEGER
+);

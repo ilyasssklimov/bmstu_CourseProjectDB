@@ -44,7 +44,8 @@ GRANT SELECT ON public.flat TO tenant;
 GRANT SELECT ON public.flat_photo TO tenant;
 GRANT INSERT, SELECT, DELETE ON public.subscription_landlord TO tenant;
 GRANT INSERT, SELECT, DELETE ON public.likes_flat TO tenant;
-GRANT INSERT, SELECT, DELETE ON public.subscription_flat TO tenant;
+GRANT INSERT, SELECT, DELETE, UPDATE ON public.subscription_flat TO tenant;
+GRANT INSERT, SELECT, DELETE ON public.subscription_metro TO tenant;
 
 -- create landlord role
 SELECT public.delete_role('landlord');
@@ -56,6 +57,7 @@ GRANT USAGE, SELECT ON SEQUENCE flat_id_seq TO landlord;
 GRANT INSERT, SELECT ON public.flat_photo TO landlord;
 GRANT SELECT ON public.subscription_landlord TO landlord;
 GRANT SELECT ON public.subscription_flat TO landlord;
+GRANT SELECT ON public.subscription_metro TO landlord;
 
 -- create admin role
 SELECT public.delete_role('admin');

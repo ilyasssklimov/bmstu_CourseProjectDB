@@ -353,8 +353,8 @@ async def show_flat(chat_id: int, flat: Flat, photos: list[str], paginate: bool 
     info = f'Владелец: {owner.full_name}'
     if username:
         info += f' (@{username})'
-    info += (f'\nТелефон: {owner.phone}\nЦена: {flat.price} ₽\nПлощадь: {flat.square} м²\nАдрес: {flat.address}'
-             f'\nБлижайшее метро: {flat.metro}\nЭтаж: {flat.floor}/{flat.max_floor}')
+    info += (f'\nТелефон: {owner.phone}\nЦена: {flat.price} ₽\nКомнаты: {flat.rooms}\nПлощадь: {flat.square} м²\n'
+             f'Адрес: {flat.address}\nБлижайшее метро: {flat.metro}\nЭтаж: {flat.floor}/{flat.max_floor}')
 
     if photos[-1:]:
         flat_messages.append(await SayNoToHostelBot.bot.send_photo(chat_id, types.InputFile(photos[-1]), caption=info))
@@ -368,9 +368,9 @@ async def show_flat(chat_id: int, flat: Flat, photos: list[str], paginate: bool 
     return flat_messages
 
 
-async def show_flat_form(flat_id: int, state: FSMContext):
+async def show_flat_form(user_id: int, state: FSMContext):
     info = await get_info_from_state(state, cfg.FILTER_FLAT_FIELDS)
-    await SayNoToHostelBot.bot.send_message(flat_id, info, reply_markup=kb.get_flats_filter_keyboard())
+    await SayNoToHostelBot.bot.send_message(user_id, info, reply_markup=kb.get_flats_filter_keyboard())
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_flats_filters')
@@ -416,33 +416,38 @@ async def add_flat_filter(callback_query: types.CallbackQuery, state: FSMContext
 
                 flats, flat_photos = SayNoToHostelBot.controller.get_flats_filters(price, rooms, square, metro)
 
-            await state.finish()
-            if not flats:
-                return
+            if flats:
+                await state.finish()
 
-            flat, photos = flats[0], flat_photos[0]
-            flat_messages = await show_flat(callback_query.from_user.id, flat, photos)
+                flat, photos = flats[0], flat_photos[0]
+                flat_messages = await show_flat(callback_query.from_user.id, flat, photos)
 
-            if flat_messages:
-                async with state.proxy() as data:
-                    data['message'] = flat_messages
-                    data['flats'] = (flats, flat_photos)
-                    data['cur_flat'] = 0
-                await ShowFlatsStates.PAGINATION_STATE.set()
+                if flat_messages:
+                    async with state.proxy() as data:
+                        data['message'] = flat_messages
+                        data['flats'] = (flats, flat_photos)
+                        data['cur_flat'] = 0
+                    await ShowFlatsStates.PAGINATION_STATE.set()
+            else:
+                await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                        'По данным параметрам квартир не найдено')
+                await show_flat_form(callback_query.from_user.id, state)
 
         case 'show_flats_subscribe':
             async with state.proxy() as data:
-                min_price, max_price = (tuple(data['price'].split(' - '))) if 'price' in data else ()
-                min_rooms, max_rooms = (tuple(data['rooms'].split(' - '))) if 'rooms' in data else ()
-                min_square, max_square = (tuple(data['square'].split(' - '))) if 'square' in data else ()
+                price = (tuple(data['price'].split(' - '))) if 'price' in data else ()
+                rooms = (tuple(data['rooms'].split(' - '))) if 'rooms' in data else ()
+                square = (tuple(data['square'].split(' - '))) if 'square' in data else ()
                 metro = data['metro'] if 'metro' in data else []
 
-                # flats, flat_photos = SayNoToHostelBot.controller.get(price, rooms, square, metro)
-
-            await state.finish()
-            # if not flats:
-            #     return
-
+                SayNoToHostelBot.controller.unsubscribe_flat(callback_query.from_user.id)
+                if SayNoToHostelBot.controller.subscribe_flat(callback_query.from_user.id, price, rooms, square, metro):
+                    await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                            'Вы успешно подписались на квартиры с данными параметрами')
+                else:
+                    await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                            'Во время подписки произошла ошибка')
+                await show_flat_form(callback_query.from_user.id, state)
 
         case 'show_flats_exit':
             await state.finish()
@@ -681,11 +686,12 @@ async def add_flat(callback_query: types.CallbackQuery, state: FSMContext):
                                                                 'Квартира успешно добавлена')
 
                         tenants = SayNoToHostelBot.controller.get_tenants_subscription(owner_id)
-                        print(flat)
+                        tenants += SayNoToHostelBot.controller.get_subscribed_flat_tenants(
+                            flat.price, flat.rooms, flat.square, flat.metro
+                        )
                         for tenant in tenants:
                             await SayNoToHostelBot.bot.send_message(tenant.id,
-                                                                    'Арендодатель, на которого вы подписаны, '
-                                                                    'добавил новую квартиру')
+                                                                    'По вашим подпискам была добавлена новая квартира')
                             await show_flat(tenant.id, flat, photos, False)
                     else:
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
@@ -784,7 +790,7 @@ async def input_photo(message: types.Message, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(state=AddFlatStates.PHOTO_STATE)
 async def input_photo(message: types.Message, state: FSMContext):
-    if message.text == 'stop':
+    if message.text.lower() == 'stop':
         await AddFlatStates.START_STATE.set()
         await add_flat_form(message.from_user.id, state)
     else:

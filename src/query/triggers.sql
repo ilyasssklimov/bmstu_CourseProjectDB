@@ -66,7 +66,7 @@ CREATE OR REPLACE FUNCTION public.delete_subscription_metro ()
 RETURNS TRIGGER AS
 $$
 BEGIN
-    DELETE FROM public.subscription_metro WHERE tenant_id = old.id;
+    DELETE FROM public.subscription_metro WHERE tenant_id = old.tenant_id;
     return old;
 END;
 $$

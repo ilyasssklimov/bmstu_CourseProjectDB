@@ -409,7 +409,8 @@ class PgDatabase(BaseDatabase):
             self.execute(query)
 
         for station in metro:
-            query = f'''INSERT INTO public.subscription_metro (tenant_id, metro) VALUES ({tenant_id}, '{station}')'''
+            query = f'''INSERT INTO public.subscription_metro (tenant_id, metro) 
+            VALUES ({tenant_id}, '{station.strip()}')'''
             self.execute(query)
         if not metro:
             query = f'''INSERT INTO public.subscription_metro (tenant_id) VALUES ({tenant_id})'''
@@ -425,13 +426,13 @@ class PgDatabase(BaseDatabase):
 
     def get_subscribed_flat_tenants(self, price: int, rooms: int, square: float, metro: str):
         query = f'''
-        SELECT t.id, t.full_name, t.sex, t.city, t.qualities, t.age, t.solvency
+        SELECT t.id, t.full_name, t.sex, t.city, t.personal_qualities, t.age, t.solvency
         FROM public.subscription_flat f JOIN public.subscription_metro m 
         ON f.tenant_id = m.tenant_id
         JOIN public.tenant t ON f.tenant_id = t.id 
-        WHERE (f.min_price IS NULL OR f.max_price IS NULL OR {price} BETWEEN f.min_price AND f.max_price AND 
-               f.min_rooms IS NULL OR f.max_rooms IS NULL OR {rooms} BETWEEN f.min_rooms AND f.max_rooms AND 
-               f.min_square IS NULL OR f.max_square IS NULL OR {square} BETWEEN f.min_square AND f.max_square AND 
-               m.metro IS NULL or m.metro = '{metro}'
-               ))'''
+        WHERE ((f.min_price IS NULL OR f.max_price IS NULL OR ({price} BETWEEN f.min_price AND f.max_price)) AND 
+               (f.min_rooms IS NULL OR f.max_rooms IS NULL OR ({rooms} BETWEEN f.min_rooms AND f.max_rooms)) AND 
+               (f.min_square IS NULL OR f.max_square IS NULL OR ({square} BETWEEN f.min_square AND f.max_square)) AND 
+               (m.metro IS NULL OR m.metro = '{metro}')
+               )'''
         return self.select(query)

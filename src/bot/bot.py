@@ -8,7 +8,8 @@ import src.bot.config as cfg
 from src.bot.config import API_TOKEN, IMG_PATH, EntityType as EType
 from src.bot.message import MESSAGE_START, MESSAGE_HELP
 from src.bot.states import (
-    RegisterTenantStates, RegisterLandlordStates, AddFlatStates, ShowFlatsStates, GetLandlordInfoStates
+    RegisterTenantStates, RegisterLandlordStates, AddFlatStates, ShowFlatsStates, GetLandlordInfoStates,
+    AddNeighborhoodStates
 )
 from src.database.config import RolesDB
 from src.database.database import BaseDatabase
@@ -17,6 +18,7 @@ from src.controller.tenant import TenantController
 from src.controller.landlord import LandlordController
 from src.model.flat import Flat
 from src.model.landlord import Landlord
+from src.model.neighborhood import Neighborhood
 from src.model.tenant import Tenant
 import src.bot.keyboard as kb
 
@@ -292,10 +294,10 @@ async def input_phone(message: types.Message, state: FSMContext):
 @SayNoToHostelBot.dispatcher.callback_query_handler(state=RegisterTenantStates.SEX_STATE, text_contains='sex')
 async def input_sex(callback_query: types.CallbackQuery, state: FSMContext):
     match callback_query.data:
-        case 'sex_male' | 'sex_female':
+        case 'sex_male' | 'sex_female' as sex:
             await RegisterTenantStates.START_STATE.set()
             async with state.proxy() as data:
-                data['sex'] = 'M' if callback_query.data == 'sex_male' else 'F'
+                data['sex'] = 'M' if sex == 'sex_male' else 'F'
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
             await register_form(callback_query.from_user.id, EType.TENANT, state)
         case _:
@@ -433,6 +435,7 @@ async def add_flat_filter(callback_query: types.CallbackQuery, state: FSMContext
             else:
                 await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                         'По данным параметрам квартир не найдено')
+                await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
                 await show_flat_form(callback_query.from_user.id, state)
 
         case 'show_flats_subscribe':
@@ -602,9 +605,9 @@ async def paginate_flats(callback_query: types.CallbackQuery, state: FSMContext)
 # Add flats
 # ==============================================
 
-async def add_flat_form(flat_id: int, state: FSMContext):
+async def add_flat_form(user_id: int, state: FSMContext):
     info = await get_info_from_state(state, cfg.ALL_FLAT_FIELDS)
-    await SayNoToHostelBot.bot.send_message(flat_id, info, reply_markup=kb.get_add_flat_keyboard())
+    await SayNoToHostelBot.bot.send_message(user_id, info, reply_markup=kb.get_add_flat_keyboard())
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='add_flat')
@@ -724,7 +727,7 @@ async def input_add_flat_num(message: types.Message, state: FSMContext, field: s
             value = int(message.text)
         assert value > 0
     except ValueError:
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Значение должно быть целым числом')
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Значение должно быть числом')
     except AssertionError:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Значение не может быть отрицательным')
     else:
@@ -898,6 +901,152 @@ async def input_rating(message: types.Message, state: FSMContext):
         await SayNoToHostelBot.bot.send_message(message.from_user.id, info,
                                                 reply_markup=kb.get_landlord_info_keyboard())
         await GetLandlordInfoStates.START_STATE.set()
+
+
+# ==============================================
+# Add neighborhood
+# ==============================================
+
+async def add_neighborhood_form(user_id: int, state: FSMContext):
+    info = await get_info_from_state(state, cfg.ALL_NEIGHBORHOOD_FIELDS)
+    await SayNoToHostelBot.bot.send_message(user_id, info, reply_markup=kb.get_add_neighborhood_keyboard())
+
+
+@SayNoToHostelBot.dispatcher.message_handler(commands='add_neighborhood')
+async def add_neighborhood_start(message: types.Message, state: FSMContext):
+    if SayNoToHostelBot.role != RolesDB.TENANT:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы '
+                                                                      'как арендатор')
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
+    else:
+        async with state.proxy() as data:
+            data['photo'] = []
+        await AddNeighborhoodStates.START_STATE.set()
+        await add_neighborhood_form(message.from_user.id, state)
+
+
+@SayNoToHostelBot.dispatcher.callback_query_handler(
+    state=AddNeighborhoodStates.START_STATE, text_contains='add_neighborhood')
+async def add_neighborhood(callback_query: types.CallbackQuery, state: FSMContext):
+    match callback_query.data:
+        case 'add_neighborhood_neighbors':
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+            await AddNeighborhoodStates.NEIGHBORS_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите количество соседей')
+
+        case 'add_neighborhood_price':
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+            await AddNeighborhoodStates.PRICE_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите желаемую цену')
+
+        case 'add_neighborhood_place':
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+            await AddNeighborhoodStates.PLACE_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите местоположение')
+
+        case 'add_neighborhood_sex':
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+            await AddNeighborhoodStates.SEX_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Укажите желаемый пол',
+                                                    reply_markup=kb.get_expanded_sex_keyboard())
+
+        case 'add_neighborhood_preferences':
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+            await AddNeighborhoodStates.PREFERENCES_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите личные предпочтения')
+
+        case 'add_neighborhood_finish':
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+            async with state.proxy() as data:
+                fields = cfg.NEIGHBORHOOD_FIELDS
+                blank = [fields[field] for field in fields
+                         if field not in data]
+                if blank:
+                    await SayNoToHostelBot.bot.send_message(
+                        callback_query.from_user.id, 'Обязательными полями для ввода являются: ' + ', '.join(blank))
+                    await add_neighborhood_form(callback_query.from_user.id, state)
+                else:
+                    place = data['place'] if 'place' in data else ''
+                    preferences = data['preferences'] if 'preferences' in data else ''
+
+                    tenant_id = callback_query.from_user.id
+                    neighbor_data = [data[field] for field in fields]
+                    neighbor_data.insert(-1, place)
+                    new_neighborhood = Neighborhood(-1, tenant_id, *neighbor_data, preferences)
+                    neighborhood = SayNoToHostelBot.controller.add_neighborhood(new_neighborhood)
+
+                    if neighborhood:
+                        await state.finish()
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Объявление о соседстве успешно добавлено')
+                    else:
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Во время добавления объявления произошла ошибка')
+
+        case 'add_neighborhood_exit':
+            await state.finish()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+
+        case _:
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+
+
+async def input_add_neighborhood_str(message: types.Message, state: FSMContext, field: str):
+    async with state.proxy() as data:
+        data[field] = message.text
+
+    await AddNeighborhoodStates.START_STATE.set()
+    await add_neighborhood_form(message.from_user.id, state)
+
+
+async def input_add_neighborhood_int(message: types.Message, state: FSMContext, field: str):
+    try:
+        value = int(message.text)
+        assert value > 0
+    except ValueError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Значение должно быть целым числом')
+    except AssertionError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Значение не может быть отрицательным')
+    else:
+        async with state.proxy() as data:
+            data[field] = value
+    finally:
+        await AddNeighborhoodStates.START_STATE.set()
+        await add_neighborhood_form(message.from_user.id, state)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddNeighborhoodStates.NEIGHBORS_STATE)
+async def input_neighbors(message: types.Message, state: FSMContext):
+    await input_add_neighborhood_int(message, state, 'neighbors')
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddNeighborhoodStates.PRICE_STATE)
+async def input_neighbors(message: types.Message, state: FSMContext):
+    await input_add_neighborhood_int(message, state, 'price')
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddNeighborhoodStates.PLACE_STATE)
+async def input_neighbors(message: types.Message, state: FSMContext):
+    await input_add_neighborhood_str(message, state, 'place')
+
+
+@SayNoToHostelBot.dispatcher.callback_query_handler(state=AddNeighborhoodStates.SEX_STATE, text_contains='expanded_sex')
+async def input_sex(callback_query: types.CallbackQuery, state: FSMContext):
+    match callback_query.data:
+        case 'expanded_sex_male' | 'expanded_sex_female' | 'expanded_sex_no_male' as sex:
+            async with state.proxy() as data:
+                data['sex'] = sex.split('_')[2][0].upper()
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+            await AddNeighborhoodStates.START_STATE.set()
+            await add_neighborhood_form(callback_query.from_user.id, state)
+        case _:
+            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddNeighborhoodStates.PREFERENCES_STATE)
+async def input_preferences(message: types.Message, state: FSMContext):
+    await input_add_neighborhood_str(message, state, 'preferences')
 
 
 # ==============================================

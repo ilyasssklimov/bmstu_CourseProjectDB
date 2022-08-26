@@ -1,7 +1,7 @@
-from multipledispatch import dispatch
 from src.controller.guest import GuestController
 from src.model.landlord import Landlord
 from src.model.flat import Flat
+from src.model.neighborhood import Neighborhood
 from src.model.tenant import Tenant
 
 
@@ -60,3 +60,7 @@ class TenantController(GuestController):
     def get_subscribed_flat_tenants(self, price: int, rooms: int, square: float, metro: str) -> list[Tenant]:
         tenants = self._tenant_repo.get_subscribed_flat_tenants(price, rooms, square, metro)
         return tenants
+
+    def add_neighborhood(self, neighborhood: Neighborhood) -> Neighborhood:
+        new_neighborhood = self._neighborhood_repo.add_neighborhood(neighborhood)
+        return new_neighborhood

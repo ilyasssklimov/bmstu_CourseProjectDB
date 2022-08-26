@@ -125,3 +125,33 @@ def get_landlord_info_keyboard():
     get_landlord_keyboard.add(exit_btn)
 
     return get_landlord_keyboard
+
+
+def get_add_neighborhood_keyboard():
+    add_neighborhood_keyboard = InlineKeyboardMarkup()
+    neighbors_btn = InlineKeyboardButton('Соседи', callback_data='add_neighborhood_neighbors')
+    price_btn = InlineKeyboardButton('Цена', callback_data='add_neighborhood_price')
+    place_btn = InlineKeyboardButton('Местоположение', callback_data='add_neighborhood_place')
+    sex_btn = InlineKeyboardButton('Пол', callback_data='add_neighborhood_sex')
+    preferences_btn = InlineKeyboardButton('Личные предпочтения', callback_data='add_neighborhood_preferences')
+    finish_btn = InlineKeyboardButton('Добавить объявление', callback_data='add_neighborhood_finish')
+    exit_btn = InlineKeyboardButton('Прервать добавление', callback_data='add_neighborhood_exit')
+
+    add_neighborhood_keyboard.row(neighbors_btn, price_btn)
+    add_neighborhood_keyboard.row(place_btn, sex_btn)
+    add_neighborhood_keyboard.row(preferences_btn)
+    add_neighborhood_keyboard.add(finish_btn)
+    add_neighborhood_keyboard.add(exit_btn)
+
+    return add_neighborhood_keyboard
+
+
+def get_expanded_sex_keyboard():
+    sex_keyboard = InlineKeyboardMarkup()
+    male = InlineKeyboardButton('Мужской', callback_data='expanded_sex_male')
+    female = InlineKeyboardButton('Женский', callback_data='expanded_sex_female')
+    no_male = InlineKeyboardButton('Не имеет значения', callback_data='expanded_sex_no_male')
+    sex_keyboard.row(male, female)
+    sex_keyboard.add(no_male)
+
+    return sex_keyboard

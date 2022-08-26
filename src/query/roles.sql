@@ -46,6 +46,8 @@ GRANT INSERT, SELECT, DELETE ON public.subscription_landlord TO tenant;
 GRANT INSERT, SELECT, DELETE ON public.likes_flat TO tenant;
 GRANT INSERT, SELECT, DELETE, UPDATE ON public.subscription_flat TO tenant;
 GRANT INSERT, SELECT, DELETE ON public.subscription_metro TO tenant;
+GRANT INSERT, SELECT ON public.neighborhood TO tenant;
+GRANT USAGE, SELECT ON SEQUENCE neighborhood_id_seq TO tenant;
 
 -- create landlord role
 SELECT public.delete_role('landlord');

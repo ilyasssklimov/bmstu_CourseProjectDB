@@ -25,12 +25,14 @@ class EntityType(Enum):
 API_TOKEN = os.getenv('HOSTEL_TOKEN_API')
 IMG_PATH = './img'
 
+
 TENANT_FIELDS = {
     'name': 'Имя',
     'sex': 'Пол',
     'city': 'Город',
     'age': 'Возраст'
 }
+
 ALL_TENANT_FIELDS = {
     'name': 'Имя',
     'sex': 'Пол',
@@ -40,6 +42,7 @@ ALL_TENANT_FIELDS = {
     'solvency': 'Платежеспособность'
 }
 
+
 LANDLORD_FIELDS = {
     'name': 'Имя',
     'city': 'Город',
@@ -47,6 +50,7 @@ LANDLORD_FIELDS = {
     'age': 'Возраст',
     'phone': 'Телефон'
 }
+
 ALL_LANDLORD_FIELDS = {
     'name': 'Имя',
     'city': 'Город',
@@ -54,12 +58,14 @@ ALL_LANDLORD_FIELDS = {
     'phone': 'Телефон'
 }
 
+
 FLAT_FIELDS = {
     'price': 'Цена',
     'rooms': 'Комнаты',
     'square': 'Площадь',
     'address': 'Адрес'
 }
+
 ALL_FLAT_FIELDS = {
     'price': 'Цена',
     'rooms': 'Комнаты',
@@ -70,9 +76,24 @@ ALL_FLAT_FIELDS = {
     'max_floor': 'Максимальный этаж',
     'description': 'Описание'
 }
+
 FILTER_FLAT_FIELDS = {
     'price': 'Цена',
     'rooms': 'Комнаты',
     'square': 'Площадь',
     'metro': 'Метро'
+}
+
+
+NEIGHBORHOOD_FIELDS = {
+    'neighbors': 'Соседи',
+    'price': 'Цена',
+    'sex': 'Пол'
+}
+ALL_NEIGHBORHOOD_FIELDS = {
+    'neighbors': 'Соседи',
+    'price': 'Цена',
+    'place': 'Местоположение',
+    'sex': 'Пол',
+    'preferences': 'Личные предпочтения'
 }

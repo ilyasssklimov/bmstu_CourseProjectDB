@@ -84,7 +84,7 @@ def get_pagination_keyboard():
     pagination_keyboard = InlineKeyboardMarkup()
     left_btn = InlineKeyboardButton('<<', callback_data='pagination_left')
     right_btn = InlineKeyboardButton('>>', callback_data='pagination_right')
-    like_flat = InlineKeyboardButton('Нравится / Не нравится', callback_data='pagination_like')
+    like_flat = InlineKeyboardButton('Нравится', callback_data='pagination_like')
     cancel_btn = InlineKeyboardButton('Отменить', callback_data='pagination_cancel')
 
     pagination_keyboard.row(left_btn, right_btn)
@@ -101,12 +101,14 @@ def get_flats_filter_keyboard():
     square_btn = InlineKeyboardButton('Площадь', callback_data='show_flats_square')
     metro_btn = InlineKeyboardButton('Ближайшее метро', callback_data='show_flats_metro')
     finish_btn = InlineKeyboardButton('Найти квартиры', callback_data='show_flats_finish')
+    subscribe_btn = InlineKeyboardButton('Подписаться', callback_data='show_flats_subscribe')
     exit_btn = InlineKeyboardButton('Прервать поиск', callback_data='show_flats_exit')
 
     show_flat_keyboard.row(price_btn, rooms_btn)
     show_flat_keyboard.add(square_btn)
     show_flat_keyboard.add(metro_btn)
     show_flat_keyboard.add(finish_btn)
+    show_flat_keyboard.add(subscribe_btn)
     show_flat_keyboard.add(exit_btn)
 
     return show_flat_keyboard

@@ -170,7 +170,7 @@ class PgDatabase(BaseDatabase):
         self.execute(query)
         logging.info(f'Flat with owner_id \'{owner_id}\' is successfully added')
         flat_id = self.select('''SELECT CURRVAL('flat_id_seq');''')[0][0]
-        return flat_id, owner_id, price, square, address, metro, floor, max_floor, description
+        return flat_id, owner_id, price, rooms, square, address, metro, floor, max_floor, description
 
     def get_flats(self):
         query = f'''SELECT * FROM public.flat'''
@@ -392,4 +392,46 @@ class PgDatabase(BaseDatabase):
             SELECT tenant_id FROM public.likes_flat WHERE flat_id = {flat_id}
         )'''
         logging.info(f'Get tenants liked flat with id = {flat_id}')
+        return self.select(query)
+
+    def subscribe_flat(self, tenant_id: int, price: tuple[int, int], rooms: tuple[int, int],
+                       square: tuple[float, float], metro: list[str]):
+        query = f'''INSERT INTO public.subscription_flat (tenant_id) VALUES ({tenant_id})'''
+        self.execute(query)
+
+        values = ''
+        values += f'''min_price = {price[0]}, max_price = {price[1]}, ''' if price else ''
+        values += f'''min_rooms = {rooms[0]}, max_rooms = {rooms[1]}, ''' if rooms else ''
+        values += f'''min_square = {square[0]}, max_square = {square[1]}, ''' if square else ''
+        values = values.rstrip(', ')
+        if values:
+            query = f'''UPDATE public.subscription_flat SET {values} WHERE tenant_id = {tenant_id}'''
+            self.execute(query)
+
+        for station in metro:
+            query = f'''INSERT INTO public.subscription_metro (tenant_id, metro) VALUES ({tenant_id}, '{station}')'''
+            self.execute(query)
+        if not metro:
+            query = f'''INSERT INTO public.subscription_metro (tenant_id) VALUES ({tenant_id})'''
+            self.execute(query)
+
+        logging.info(f'Add subscription of tenant with id = {tenant_id} to flats')
+
+    def unsubscribe_flat(self, tenant_id: int):
+        query = f'''
+        DELETE FROM public.subscription_flat WHERE tenant_id = {tenant_id}'''
+        self.execute(query)
+        logging.info(f'Delete subscription of tenant with id = {tenant_id} to flats')
+
+    def get_subscribed_flat_tenants(self, price: int, rooms: int, square: float, metro: str):
+        query = f'''
+        SELECT t.id, t.full_name, t.sex, t.city, t.qualities, t.age, t.solvency
+        FROM public.subscription_flat f JOIN public.subscription_metro m 
+        ON f.tenant_id = m.tenant_id
+        JOIN public.tenant t ON f.tenant_id = t.id 
+        WHERE (f.min_price IS NULL OR f.max_price IS NULL OR {price} BETWEEN f.min_price AND f.max_price AND 
+               f.min_rooms IS NULL OR f.max_rooms IS NULL OR {rooms} BETWEEN f.min_rooms AND f.max_rooms AND 
+               f.min_square IS NULL OR f.max_square IS NULL OR {square} BETWEEN f.min_square AND f.max_square AND 
+               m.metro IS NULL or m.metro = '{metro}'
+               ))'''
         return self.select(query)

@@ -345,3 +345,18 @@ SELECT public.create_constraint(
     'ALTER TABLE public.subscription_flat ADD CONSTRAINT subscription_flat_square_check' ||
     ' CHECK (min_square <= max_square AND min_square >= 0);'
 );
+
+
+-- create constraints to public.subscription_metro
+SELECT public.create_constraint (
+    'tenant',
+    'subscription_metro_tenant_id_fkey',
+    'ALTER TABLE public.subscription_metro ADD CONSTRAINT subscription_metro_tenant_id_fkey ' ||
+    'FOREIGN KEY (tenant_id) REFERENCES public.tenant (id);'
+);
+
+SELECT public.create_constraint (
+    'subscription_metro',
+    'subscription_metro_tenant_id_check',
+    'ALTER TABLE public.subscription_metro ADD CONSTRAINT subscription_metro_tenant_id_check CHECK (tenant_id IS NOT NULL);'
+);

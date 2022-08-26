@@ -172,3 +172,13 @@ class BaseDatabase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_likes_flat(self, flat_id: int): ...
+
+    @abc.abstractmethod
+    def subscribe_flat(self, tenant_id: int, price: tuple[int, int], rooms: tuple[int, int],
+                       square: tuple[float, float], metro: list[str]): ...
+
+    @abc.abstractmethod
+    def unsubscribe_flat(self, tenant_id: int): ...
+
+    @abc.abstractmethod
+    def get_subscribed_flat_tenants(self, price: int, rooms: int, square: float, metro: str): ...

@@ -63,8 +63,8 @@ class TenantRepository:
 
     def subscribe_landlord(self, tenant_id: int, landlord_id: int) -> bool:
         try:
-            result = self.__db.subscribe_landlord(tenant_id, landlord_id)
-            return result
+            self.__db.subscribe_landlord(tenant_id, landlord_id)
+            return True
         except Exception as e:
             logging.error(e)
             logging.error('Some error while adding subscription')
@@ -73,8 +73,8 @@ class TenantRepository:
 
     def unsubscribe_landlord(self, tenant_id: int, landlord_id: int) -> bool:
         try:
-            result = self.__db.unsubscribe_landlord(tenant_id, landlord_id)
-            return result
+            self.__db.unsubscribe_landlord(tenant_id, landlord_id)
+            return True
         except Exception as e:
             logging.error(e)
             logging.error('Some error while deleting subscription')
@@ -93,8 +93,8 @@ class TenantRepository:
 
     def like_flat(self, tenant_id: int, flat_id: int) -> bool:
         try:
-            result = self.__db.like_flat(tenant_id, flat_id)
-            return result
+            self.__db.like_flat(tenant_id, flat_id)
+            return True
         except Exception as e:
             logging.error(e)
             logging.error('Some error while adding like')
@@ -103,8 +103,8 @@ class TenantRepository:
 
     def unlike_flat(self, tenant_id: int, flat_id: int) -> bool:
         try:
-            result = self.__db.unlike_flat(tenant_id, flat_id)
-            return result
+            self.__db.unlike_flat(tenant_id, flat_id)
+            return True
         except Exception as e:
             logging.error(e)
             logging.error('Some error while deleting like')
@@ -140,3 +140,36 @@ class TenantRepository:
             logging.error(f'Some error while getting tenant with id = {tenant_id}')
 
         return Tenant()
+
+    def subscribe_flat(self, tenant_id: int, price: tuple[int, int], rooms: tuple[int, int],
+                       square: tuple[float, float], metro: list[str]) -> bool:
+        try:
+            self.__db.subscribe_flat(tenant_id, price, rooms, square, metro)
+            return True
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while subscribe tenant with id = {tenant_id} to flat')
+
+        return False
+
+    def unsubscribe_flat(self, tenant_id: int) -> bool:
+        try:
+            self.__db.unsubscribe_flat(tenant_id)
+            return True
+
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while unsubscribe tenant with id = {tenant_id} to flat')
+
+        return False
+
+    def get_subscribed_flat_tenants(self, price: int, rooms: int, square: float, metro: str) -> list[Tenant]:
+        try:
+            tenants = [Tenant(*tenant) for tenant in self.__db.get_subscribed_flat_tenants(price, rooms, square, metro)]
+            return tenants
+
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while get subscribed tenants')
+
+        return []

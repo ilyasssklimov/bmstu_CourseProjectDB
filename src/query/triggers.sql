@@ -59,3 +59,22 @@ CREATE TRIGGER delete_tenant
 BEFORE DELETE on public.tenant
 FOR EACH ROW
 EXECUTE PROCEDURE public.delete_tenant_dependencies();
+
+
+-- trigger to delete metro before deleting subscription_flat
+CREATE OR REPLACE FUNCTION public.delete_subscription_metro ()
+RETURNS TRIGGER AS
+$$
+BEGIN
+    DELETE FROM public.subscription_metro WHERE tenant_id = old.id;
+    return old;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+DROP TRIGGER IF EXISTS delete_subscription_flat on public.subscription_flat;
+
+CREATE TRIGGER delete_subscription_flat
+BEFORE DELETE on public.subscription_flat
+FOR EACH ROW
+EXECUTE PROCEDURE public.delete_subscription_metro();

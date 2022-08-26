@@ -92,6 +92,12 @@ CREATE TABLE IF NOT EXISTS public.subscription_flat (
     min_rooms INTEGER,
     max_rooms INTEGER,
     min_square REAL,
-    max_square REAL,
-    metro TEXT
+    max_square REAL
+);
+
+
+-- create table public.subscription_metro
+    CREATE TABLE IF NOT EXISTS public.subscription_metro (
+    tenant_id INTEGER,
+    metro VARCHAR(30)
 );

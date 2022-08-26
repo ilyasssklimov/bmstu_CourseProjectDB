@@ -42,9 +42,9 @@ GRANT SELECT ON public.tenant TO tenant;
 GRANT SELECT, UPDATE ON public.landlord TO tenant;
 GRANT SELECT ON public.flat TO tenant;
 GRANT SELECT ON public.flat_photo TO tenant;
-GRANT INSERT, SELECT ON public.subscription_landlord TO tenant;
-GRANT INSERT, SELECT ON public.likes_flat TO tenant;
-GRANT INSERT, SELECT ON public.subscription_flat TO tenant;
+GRANT INSERT, SELECT, DELETE ON public.subscription_landlord TO tenant;
+GRANT INSERT, SELECT, DELETE ON public.likes_flat TO tenant;
+GRANT INSERT, SELECT, DELETE ON public.subscription_flat TO tenant;
 
 -- create landlord role
 SELECT public.delete_role('landlord');

@@ -12,10 +12,6 @@ class TenantController(GuestController):
         photos = [self._flat_repo.get_photos(flat.id) for flat in flats]
         return flats, photos
 
-    @dispatch(str)
-    def get_landlord(self, landlord_name: str) -> Landlord:
-        return self._landlord_repo.get_landlord(landlord_name)
-
     def update_landlord(self, landlord: Landlord) -> Landlord:
         upd_landlord = self._landlord_repo.update_landlord(landlord)
         return upd_landlord
@@ -51,3 +47,16 @@ class TenantController(GuestController):
     def get_tenant(self, tenant_id: int) -> Tenant:
         tenant = self._tenant_repo.get_tenant(tenant_id)
         return tenant
+
+    def subscribe_flat(self, tenant_id: int, price: tuple[int, int], rooms: tuple[int, int],
+                       square: tuple[float, float], metro: list[str]) -> bool:
+        result = self._tenant_repo.subscribe_flat(tenant_id, price, rooms, square, metro)
+        return result
+
+    def unsubscribe_flat(self, tenant_id: int) -> bool:
+        result = self._tenant_repo.unsubscribe_flat(tenant_id)
+        return result
+
+    def get_subscribed_flat_tenants(self, price: int, rooms: int, square: float, metro: str) -> list[Tenant]:
+        tenants = self._tenant_repo.get_subscribed_flat_tenants(price, rooms, square, metro)
+        return tenants

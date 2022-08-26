@@ -37,7 +37,6 @@ class GuestController:
         photos = [self._flat_repo.get_photos(flat.id) for flat in flats]
         return flats, photos
 
-    @dispatch(int)
-    def get_landlord(self, landlord_id: int) -> Landlord:
-        landlord = self._landlord_repo.get_landlord(landlord_id)
+    def get_landlord(self, landlord: int | str) -> Landlord:
+        landlord = self._landlord_repo.get_landlord(landlord)
         return landlord

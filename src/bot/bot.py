@@ -128,12 +128,14 @@ async def send_register(message: types.Message):
     if message.text.endswith('tenant'):
         if SayNoToHostelBot.check_tenant(user_id):
             await SayNoToHostelBot.bot.send_message(user_id, 'Вы вошли как арендатор')
+            await SayNoToHostelBot.bot.send_message(user_id, MESSAGE_HELP)
         else:
             await RegisterTenantStates.START_STATE.set()
             await register_form(user_id, EType.TENANT)
     elif message.text.endswith('landlord'):
         if SayNoToHostelBot.check_landlord(user_id):
             await SayNoToHostelBot.bot.send_message(user_id, 'Вы вошли как арендодатель')
+            await SayNoToHostelBot.bot.send_message(user_id, MESSAGE_HELP)
         else:
             await RegisterLandlordStates.START_STATE.set()
             await register_form(user_id, EType.LANDLORD)
@@ -550,6 +552,7 @@ async def paginate_flats(callback_query: types.CallbackQuery, state: FSMContext)
             if SayNoToHostelBot.role != RolesDB.TENANT:
                 await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                         'Вы должны быть зарегистрированы как арендатор')
+                await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
             else:
                 async with state.proxy() as data:
                     tenant_id = callback_query.from_user.id
@@ -609,6 +612,7 @@ async def add_flat_start(message: types.Message, state: FSMContext):
     if SayNoToHostelBot.role != RolesDB.LANDLORD:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы '
                                                                       'как арендодатель')
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
     else:
         async with state.proxy() as data:
             data['photo'] = []
@@ -807,6 +811,7 @@ async def input_photo(message: types.Message, state: FSMContext):
 async def get_landlord_info(message: types.Message):
     if SayNoToHostelBot.role != RolesDB.TENANT:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы как арендатор')
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
     else:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Введите имя арендодателя')
         await GetLandlordInfoStates.NAME_STATE.set()

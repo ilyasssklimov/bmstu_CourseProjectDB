@@ -59,3 +59,11 @@ class AddNeighborhoodStates(SayNoToHostelStates):
     PLACE_STATE = State()
     SEX_STATE = State()
     PREFERENCES_STATE = State()
+
+
+class ShowNeighborhoodsStates(SayNoToHostelStates):
+    PAGINATION_STATE = State()
+    START_STATE = State()
+    NEIGHBORS_STATE = State()
+    PRICE_STATE = State()
+    SEX_STATE = State()

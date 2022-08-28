@@ -44,10 +44,6 @@ class TenantController(GuestController):
         tenants = self._tenant_repo.get_likes_flat(flat_id)
         return tenants
 
-    def get_tenant(self, tenant_id: int) -> Tenant:
-        tenant = self._tenant_repo.get_tenant(tenant_id)
-        return tenant
-
     def subscribe_flat(self, tenant_id: int, price: tuple[int, int], rooms: tuple[int, int],
                        square: tuple[float, float], metro: list[str]) -> bool:
         result = self._tenant_repo.subscribe_flat(tenant_id, price, rooms, square, metro)
@@ -64,3 +60,8 @@ class TenantController(GuestController):
     def add_neighborhood(self, neighborhood: Neighborhood) -> Neighborhood:
         new_neighborhood = self._neighborhood_repo.add_neighborhood(neighborhood)
         return new_neighborhood
+
+    def get_neighborhoods_filters(self, neighbors: tuple[int, int], price: tuple[int, int],
+                                  sex: str) -> list[Neighborhood]:
+        neighborhoods = self._neighborhood_repo.get_neighborhoods_filters(neighbors, price, sex)
+        return neighborhoods

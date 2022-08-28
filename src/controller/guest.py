@@ -1,8 +1,8 @@
-from multipledispatch import dispatch
 from src.database.database import BaseDatabase
 from src.model.flat import Flat
 from src.model.tenant import Tenant
 from src.model.landlord import Landlord
+from src.model.neighborhood import Neighborhood
 from src.repository.tenant import TenantRepository
 from src.repository.landlord import LandlordRepository
 from src.repository.flat import FlatRepository
@@ -40,3 +40,11 @@ class GuestController:
     def get_landlord(self, landlord: int | str) -> Landlord:
         landlord = self._landlord_repo.get_landlord(landlord)
         return landlord
+
+    def get_neighborhoods(self) -> list[Neighborhood]:
+        neighborhoods = self._neighborhood_repo.get_neighborhoods()
+        return neighborhoods
+
+    def get_tenant(self, tenant_id: int) -> Tenant:
+        tenant = self._tenant_repo.get_tenant(tenant_id)
+        return tenant

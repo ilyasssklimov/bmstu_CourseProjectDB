@@ -90,10 +90,17 @@ NEIGHBORHOOD_FIELDS = {
     'price': 'Цена',
     'sex': 'Пол'
 }
+
 ALL_NEIGHBORHOOD_FIELDS = {
     'neighbors': 'Соседи',
     'price': 'Цена',
     'place': 'Местоположение',
     'sex': 'Пол',
     'preferences': 'Личные предпочтения'
+}
+
+FILTER_NEIGHBORHOOD_FIELDS = {
+    'neighbors': 'Соседи',
+    'price': 'Цена',
+    'sex': 'Пол'
 }

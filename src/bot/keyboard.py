@@ -80,15 +80,17 @@ def get_add_flat_keyboard():
     return add_flat_keyboard
 
 
-def get_pagination_keyboard():
+def get_pagination_keyboard(collapse: bool = False):
     pagination_keyboard = InlineKeyboardMarkup()
     left_btn = InlineKeyboardButton('<<', callback_data='pagination_left')
     right_btn = InlineKeyboardButton('>>', callback_data='pagination_right')
-    like_flat = InlineKeyboardButton('Нравится', callback_data='pagination_like')
-    cancel_btn = InlineKeyboardButton('Отменить', callback_data='pagination_cancel')
-
     pagination_keyboard.row(left_btn, right_btn)
-    pagination_keyboard.add(like_flat)
+
+    if not collapse:
+        like_flat = InlineKeyboardButton('Нравится', callback_data='pagination_like')
+        pagination_keyboard.add(like_flat)
+
+    cancel_btn = InlineKeyboardButton('Отменить', callback_data='pagination_cancel')
     pagination_keyboard.add(cancel_btn)
 
     return pagination_keyboard
@@ -155,3 +157,18 @@ def get_expanded_sex_keyboard():
     sex_keyboard.add(no_male)
 
     return sex_keyboard
+
+
+def get_neighborhoods_filter_keyboard():
+    show_neighborhood_keyboard = InlineKeyboardMarkup()
+    neighbors_btn = InlineKeyboardButton('Соседи', callback_data='show_neighborhoods_neighbors')
+    price_btn = InlineKeyboardButton('Цена', callback_data='show_neighborhoods_price')
+    sex_btn = InlineKeyboardButton('Пол', callback_data='show_neighborhoods_sex')
+    finish_btn = InlineKeyboardButton('Найти объявления', callback_data='show_neighborhoods_finish')
+    exit_btn = InlineKeyboardButton('Прервать поиск', callback_data='show_neighborhoods_exit')
+
+    show_neighborhood_keyboard.row(neighbors_btn, price_btn, sex_btn)
+    show_neighborhood_keyboard.add(finish_btn)
+    show_neighborhood_keyboard.add(exit_btn)
+
+    return show_neighborhood_keyboard

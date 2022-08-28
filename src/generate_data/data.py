@@ -33,18 +33,18 @@ class DataGenerator:
             full_name = self.faker.name()
             city = self.faker.city()
             age = randint(*cfg.USER_AGE_RANGE)
+            username = en_faker.user_name()
 
             if user_type == EType.TENANT:
                 sex = choice(['M', 'F'])
                 qualities = self.faker.text(50)
                 solvency = choice([True, False])
-                tenant = Tenant(user_id, full_name, sex, city, qualities, age, solvency)
+                tenant = Tenant(user_id, full_name, sex, city, qualities, age, solvency, username)
                 if self.__tenant_repo.add_tenant(tenant):
                     count += 1
             elif user_type == EType.LANDLORD:
                 rating = round(uniform(*cfg.LANDLORD_RATING_RANGE), 1)
                 phone = cfg.PHONE_CODE + ''.join([str(randint(0, 9)) for _ in range(10)])
-                username = en_faker.user_name()
                 landlord = Landlord(user_id, full_name, city, rating, age, phone, username)
                 if self.__landlord_repo.add_landlord(landlord):
                     count += 1

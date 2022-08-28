@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS public.tenant (
     city VARCHAR(30),
     personal_qualities TEXT,
     age INTEGER,
-    solvency BOOLEAN
+    solvency BOOLEAN,
+    username VARCHAR(35)
 );
 
 

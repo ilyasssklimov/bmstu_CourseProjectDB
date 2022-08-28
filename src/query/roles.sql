@@ -34,6 +34,7 @@ GRANT SELECT, INSERT ON public.tenant TO guest;
 GRANT SELECT, INSERT ON public.landlord TO guest;
 GRANT SELECT ON public.flat TO guest;
 GRANT SELECT ON public.flat_photo TO guest;
+GRANT SELECT ON public.neighborhood TO guest;
 
 -- create tenant role
 SELECT public.delete_role('tenant');

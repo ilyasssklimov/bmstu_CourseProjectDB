@@ -57,3 +57,16 @@ class NeighborhoodRepository:
             logging.error(f'Some error while updating neighborhood with tenant_id = {neighborhood.tenant_id}')
 
         return Neighborhood()
+
+    def get_neighborhoods_filters(self, neighbors: tuple[int, int], price: tuple[int, int],
+                                  sex: str) -> list[Neighborhood]:
+        try:
+            neighborhoods = [Neighborhood(*neighborhood) for neighborhood in
+                             self.__db.get_neighborhoods_filters(neighbors, price, sex)]
+            neighborhoods.sort(key=lambda neighborhood: neighborhood.id, reverse=True)
+            return neighborhoods
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting neighborhoods by filters')
+
+        return []

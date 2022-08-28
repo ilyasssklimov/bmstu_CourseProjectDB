@@ -2,7 +2,7 @@ from src.model.model import BaseModel
 
 
 class Tenant(BaseModel):
-    def __init__(self, tenant_id=-1, full_name='', sex='', city='', qualities='', age=-1, solvency=None):
+    def __init__(self, tenant_id=-1, full_name='', sex='', city='', qualities='', age=-1, solvency=None, username=''):
         super().__init__(
             id=tenant_id,
             full_name=full_name,
@@ -10,7 +10,8 @@ class Tenant(BaseModel):
             city=city,
             qualities=qualities,
             age=age,
-            solvency=solvency
+            solvency=solvency,
+            username=username
         )
 
     def __eq__(self, other):

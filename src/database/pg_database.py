@@ -53,14 +53,15 @@ class PgDatabase(BaseDatabase):
             logging.debug(e)
 
     # tenant methods
-    def add_tenant(self, user_id: int, full_name: str, sex: str, city: str, qualities: str, age: int, solvency: bool):
+    def add_tenant(self, user_id: int, full_name: str, sex: str, city: str, qualities: str, age: int,
+                   solvency: bool, username: str):
         query = f'''
-        INSERT INTO public.tenant (id, full_name, sex, city, personal_qualities, age, solvency)
-        VALUES ({user_id}, '{full_name}', '{sex}', '{city}', '{qualities}', {age}, {solvency});
+        INSERT INTO public.tenant (id, full_name, sex, city, personal_qualities, age, solvency, username)
+        VALUES ({user_id}, '{full_name}', '{sex}', '{city}', '{qualities}', {age}, {solvency}, '{username}');
         '''
         self.execute(query)
         logging.info(f'Tenant with name \'{full_name}\' is successfully added')
-        return user_id, full_name, sex, city, qualities, age, solvency
+        return user_id, full_name, sex, city, qualities, age, solvency, username
 
     def get_tenants(self):
         query = '''SELECT * FROM public.tenant'''
@@ -257,6 +258,20 @@ class PgDatabase(BaseDatabase):
     def get_neighborhoods(self):
         query = f'''SELECT * FROM public.neighborhood'''
         logging.info('Get all neighborhood')
+        return self.select(query)
+
+    def get_neighborhoods_filters(self, neighbors: tuple[int, int], price: tuple[int, int], sex: str):
+        query = f'''SELECT * FROM public.neighborhood'''
+
+        conditions = ''
+        conditions += f'''neighbors BETWEEN {neighbors[0]} AND {neighbors[1]} AND ''' if neighbors else ''
+        conditions += f'''price BETWEEN {price[0]} AND {price[1]} AND ''' if price else ''
+        conditions += f'''sex = {sex} AND ''' if sex else ''
+        conditions = conditions.rstrip('AND ')
+        if conditions:
+            query += ' WHERE ' + conditions
+
+        logging.info('Get neighborhoods by filters')
         return self.select(query)
 
     def get_neighborhood(self, neighborhood_id: int):

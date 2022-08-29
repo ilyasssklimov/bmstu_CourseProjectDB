@@ -75,3 +75,10 @@ class AddGoodsStates(SayNoToHostelStates):
     PRICE_STATE = State()
     CONDITION_STATE = State()
     BARGAIN = State()
+
+
+class ShowGoodsStates(SayNoToHostelStates):
+    PAGINATION_STATE = State()
+    START_STATE = State()
+    PRICE_STATE = State()
+    CONDITION_STATE = State()

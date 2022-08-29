@@ -70,3 +70,7 @@ class TenantController(GuestController):
     def add_goods(self, goods: Goods) -> Goods:
         new_goods = self._goods_repo.add_goods(goods)
         return new_goods
+
+    def get_goods_filters(self, price: tuple[int, int], condition: str) -> list[Goods]:
+        goods = self._goods_repo.get_goods_filters(price, condition)
+        return goods

@@ -327,6 +327,19 @@ class PgDatabase(BaseDatabase):
         logging.info(f'Get goods with id = {goods_id}')
         return self.select(query)[0]
 
+    def get_goods_filters(self, price: tuple[int, int], condition: str):
+        query = f'''SELECT * FROM public.goods'''
+
+        conditions = ''
+        conditions += f'''price BETWEEN {price[0]} AND {price[1]} AND ''' if price else ''
+        conditions += f'''condition = {condition} AND ''' if condition else ''
+        conditions = conditions.rstrip('AND ')
+        if conditions:
+            query += ' WHERE ' + conditions
+
+        logging.info('Get goods by filters')
+        return self.select(query)
+
     def update_goods(self, goods_id: int, owner_id: int, name: str, price: int, condition: str, bargain: bool):
         query = f'''
         UPDATE public.goods SET owner_id = {owner_id}, name = '{name}', price = {price},

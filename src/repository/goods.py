@@ -60,3 +60,14 @@ class GoodsRepository:
             logging.error(f'Some error while updating goods with id = {goods.id}')
 
         return Goods()
+
+    def get_goods_filters(self, price: tuple[int, int], condition: str) -> list[Goods]:
+        try:
+            goods = [Goods(*goods) for goods in self.__db.get_goods_filters(price, condition)]
+            goods.sort(key=lambda g: g.id, reverse=True)
+            return goods
+        except Exception as e:
+            logging.error(e)
+            logging.error(f'Some error while getting goods by filters')
+
+        return []

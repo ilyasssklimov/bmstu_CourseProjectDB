@@ -9,7 +9,7 @@ from src.bot.config import API_TOKEN, IMG_PATH, EntityType as EType
 from src.bot.message import MESSAGE_START, MESSAGE_HELP
 from src.bot.states import (
     RegisterTenantStates, RegisterLandlordStates, AddFlatStates, ShowFlatsStates, GetLandlordInfoStates,
-    AddNeighborhoodStates, ShowNeighborhoodsStates, AddGoodsStates
+    AddNeighborhoodStates, ShowNeighborhoodsStates, AddGoodsStates, ShowGoodsStates
 )
 from src.database.config import RolesDB
 from src.database.database import BaseDatabase
@@ -1121,7 +1121,7 @@ async def add_neighborhood_filter(callback_query: types.CallbackQuery, state: FS
             else:
                 await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                         'По данным параметрам объявлений не найдено')
-                await show_flat_form(callback_query.from_user.id, state)
+                await show_neighborhood_form(callback_query.from_user.id, state)
 
         case 'show_neighborhoods_exit':
             await state.finish()
@@ -1146,7 +1146,7 @@ async def input_show_neighborhood_range(message: types.Message, state: FSMContex
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=ShowNeighborhoodsStates.NEIGHBORS_STATE)
-async def input_price(message: types.Message, state: FSMContext):
+async def input_neighbors(message: types.Message, state: FSMContext):
     await input_show_neighborhood_range(message, state, 'neighbors')
 
 
@@ -1175,6 +1175,7 @@ async def show_neighborhoods(message: types.Message, state: FSMContext):
 @SayNoToHostelBot.dispatcher.callback_query_handler(state=ShowNeighborhoodsStates.PAGINATION_STATE,
                                                     text_contains='pagination')
 async def paginate_neighborhoods(callback_query: types.CallbackQuery, state: FSMContext):
+    await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
     match callback_query.data:
         case 'pagination_left':
             async with state.proxy() as data:
@@ -1211,9 +1212,6 @@ async def paginate_neighborhoods(callback_query: types.CallbackQuery, state: FSM
         case 'pagination_cancel':
             await state.finish()
             await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
-
-        case _:
-            await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
 
 # ==============================================
@@ -1325,7 +1323,8 @@ async def input_price(message: types.Message, state: FSMContext):
     await input_add_goods_int(message, state, 'price')
 
 
-@SayNoToHostelBot.dispatcher.callback_query_handler(state=AddGoodsStates.CONDITION_STATE, text_contains='condition')
+@SayNoToHostelBot.dispatcher.callback_query_handler(
+    state=[AddGoodsStates.CONDITION_STATE, ShowGoodsStates.CONDITION_STATE], text_contains='condition')
 async def input_condition(callback_query: types.CallbackQuery, state: FSMContext):
     await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
 
@@ -1343,6 +1342,161 @@ async def input_bargain(callback_query: types.CallbackQuery, state: FSMContext):
         data['bargain'] = True if callback_query.data == 'bargain_yes' else False
     await AddGoodsStates.START_STATE.set()
     await add_goods_form(callback_query.from_user.id, state)
+
+
+# ==============================================
+# Show goods
+# ==============================================
+
+async def show_goods_one(chat_id: int, goods: Goods, paginate: bool = True) -> types.Message:
+    owner = SayNoToHostelBot.controller.get_tenant(goods.owner_id)
+    username = owner.username
+    info = f'Владелец: {owner.full_name}'
+    if username:
+        info += f' (@{username})'
+    info += (f'\nНазвание: {goods.name}\nЦена: {goods.price} ₽\n'
+             f'Состояние: {cfg.GOODS_CONDITIONS[goods.condition]}\n'
+             f'Возможен ли торг: {cfg.GOODS_BARGAIN[goods.bargain]}\n')
+
+    message = await SayNoToHostelBot.bot.send_message(chat_id, info)
+    if paginate:
+        await message.edit_reply_markup(reply_markup=kb.get_pagination_keyboard(True))
+
+    return message
+
+
+async def show_goods_form(user_id: int, state: FSMContext):
+    info = await get_info_from_state(state, cfg.FILTER_GOODS_FIELDS)
+    await SayNoToHostelBot.bot.send_message(user_id, info, reply_markup=kb.get_goods_filter_keyboard())
+
+
+@SayNoToHostelBot.dispatcher.message_handler(commands='show_goods_filters')
+async def show_goods_filters_start(message: types.Message, state: FSMContext):
+    if SayNoToHostelBot.role != RolesDB.TENANT and SayNoToHostelBot.role != RolesDB.LANDLORD:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы')
+    else:
+        await ShowGoodsStates.START_STATE.set()
+        await show_goods_form(message.from_user.id, state)
+
+
+@SayNoToHostelBot.dispatcher.callback_query_handler(state=ShowGoodsStates.START_STATE, text_contains='show_goods')
+async def add_goods_filter(callback_query: types.CallbackQuery, state: FSMContext):
+    await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+    match callback_query.data:
+        case 'show_goods_price':
+            await ShowGoodsStates.PRICE_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите через пробел минимальную '
+                                                                                 'и максимальную цену')
+
+        case 'show_goods_condition':
+            await ShowGoodsStates.CONDITION_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Укажите состояние товара',
+                                                    reply_markup=kb.get_expanded_sex_keyboard())
+
+        case 'show_goods_finish':
+            async with state.proxy() as data:
+                price = (tuple(data['price'].split(' - '))) if 'price' in data else ()
+                condition = data['condition'] if 'condition' in data else ''
+
+                goods = SayNoToHostelBot.controller.get_goods_filters(price, condition)
+
+            if goods:
+                await state.finish()
+
+                goods_message = await show_goods_one(callback_query.from_user.id, goods[0])
+                if goods_message:
+                    async with state.proxy() as data:
+                        data['message'] = goods_message
+                        data['goods'] = goods
+                        data['cur_goods'] = 0
+                    await ShowGoodsStates.PAGINATION_STATE.set()
+            else:
+                await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                        'По данным параметрам объявлений не найдено')
+                await show_goods_form(callback_query.from_user.id, state)
+
+        case 'show_goods_exit':
+            await state.finish()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
+
+
+async def input_show_goods_range(message: types.Message, state: FSMContext, field: str):
+    try:
+        min_field, max_field = map(int, message.text.split())
+        assert 0 < min_field <= max_field
+    except ValueError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Должно быть введено два числа через пробел')
+    except AssertionError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Два числа должны быть положительными '
+                                                                      '(при этом первое не больше второго)')
+    else:
+        async with state.proxy() as data:
+            data[field] = f'{min_field} - {max_field}'
+    finally:
+        await ShowGoodsStates.START_STATE.set()
+        await show_goods_form(message.from_user.id, state)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=ShowGoodsStates.PRICE_STATE)
+async def input_price(message: types.Message, state: FSMContext):
+    await input_show_goods_range(message, state, 'price')
+
+
+@SayNoToHostelBot.dispatcher.message_handler(commands='show_goods')
+async def show_goods(message: types.Message, state: FSMContext):
+    goods = SayNoToHostelBot.controller.get_goods()
+    if not goods:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Объявлений не найдено')
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
+        return
+
+    goods_message = await show_goods_one(message.from_user.id, goods[0])
+    if goods_message:
+        async with state.proxy() as data:
+            data['message'] = goods_message
+            data['goods'] = goods
+            data['cur_goods'] = 0
+        await ShowGoodsStates.PAGINATION_STATE.set()
+
+
+@SayNoToHostelBot.dispatcher.callback_query_handler(state=ShowGoodsStates.PAGINATION_STATE,
+                                                    text_contains='pagination')
+async def paginate_goods(callback_query: types.CallbackQuery, state: FSMContext):
+    await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+    match callback_query.data:
+        case 'pagination_left':
+            async with state.proxy() as data:
+                data['cur_goods'] -= 1 if data['cur_goods'] > 0 else 0
+                cur_goods: int = data['cur_goods']
+                goods_message: types.Message = data['message']
+                goods: list[Goods] = data['goods']
+
+                try:
+                    await goods_message.delete()
+                except exceptions.MessageToDeleteNotFound as e:
+                    logging.error(e)
+
+                goods_message = await show_goods_one(callback_query.from_user.id, goods[cur_goods])
+                data['message'] = goods_message
+
+        case 'pagination_right':
+            async with state.proxy() as data:
+                goods_message: types.Message = data['message']
+                goods: list[Goods] = data['goods']
+                data['cur_goods'] += 1 if data['cur_goods'] < len(goods) - 1 else 0
+                cur_goods: int = data['cur_goods']
+
+                try:
+                    await goods_message.delete()
+                except exceptions.MessageToDeleteNotFound as e:
+                    logging.error(e)
+
+                goods_message = await show_goods_one(callback_query.from_user.id, goods[cur_goods])
+                data['message'] = goods_message
+
+        case 'pagination_cancel':
+            await state.finish()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
 
 
 # ==============================================

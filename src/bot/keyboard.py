@@ -214,3 +214,17 @@ def get_bargain_keyboard():
     bargain_keyboard.row(yes, no)
 
     return bargain_keyboard
+
+
+def get_goods_filter_keyboard():
+    goods_filter_keyboard = InlineKeyboardMarkup()
+    price_btn = InlineKeyboardButton('Цена', callback_data='show_goods_price')
+    condition_btn = InlineKeyboardButton('Состояние', callback_data='show_goods_condition')
+    finish_btn = InlineKeyboardButton('Найти объявления', callback_data='show_goods_finish')
+    exit_btn = InlineKeyboardButton('Прервать поиск', callback_data='show_goods_exit')
+
+    goods_filter_keyboard.row(price_btn, condition_btn)
+    goods_filter_keyboard.add(finish_btn)
+    goods_filter_keyboard.add(exit_btn)
+
+    return goods_filter_keyboard

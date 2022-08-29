@@ -142,6 +142,9 @@ class BaseDatabase(metaclass=abc.ABCMeta):
     def get_goods(self, goods_id: int): ...
 
     @abc.abstractmethod
+    def get_goods_filters(self, price: tuple[int, int], condition: str): ...
+
+    @abc.abstractmethod
     def update_goods(self, goods_id: int, owner_id: int, name: str, price: int, condition: str, bargain: bool): ...
 
     @dispatch(int)

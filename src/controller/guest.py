@@ -1,5 +1,6 @@
 from src.database.database import BaseDatabase
 from src.model.flat import Flat
+from src.model.goods import Goods
 from src.model.tenant import Tenant
 from src.model.landlord import Landlord
 from src.model.neighborhood import Neighborhood
@@ -48,3 +49,7 @@ class GuestController:
     def get_tenant(self, tenant_id: int) -> Tenant:
         tenant = self._tenant_repo.get_tenant(tenant_id)
         return tenant
+
+    def get_goods(self) -> list[Goods]:
+        goods = self._goods_repo.get_goods()
+        return goods

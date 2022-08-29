@@ -67,3 +67,11 @@ class ShowNeighborhoodsStates(SayNoToHostelStates):
     NEIGHBORS_STATE = State()
     PRICE_STATE = State()
     SEX_STATE = State()
+
+
+class AddGoodsStates(SayNoToHostelStates):
+    START_STATE = State()
+    NAME_STATE = State()
+    PRICE_STATE = State()
+    CONDITION_STATE = State()
+    BARGAIN = State()

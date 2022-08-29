@@ -172,3 +172,45 @@ def get_neighborhoods_filter_keyboard():
     show_neighborhood_keyboard.add(exit_btn)
 
     return show_neighborhood_keyboard
+
+
+def get_add_goods_keyboard():
+    add_goods_keyboard = InlineKeyboardMarkup()
+    name_btn = InlineKeyboardButton('Название', callback_data='add_goods_name')
+    price_btn = InlineKeyboardButton('Цена', callback_data='add_goods_price')
+    condition_btn = InlineKeyboardButton('Состояние', callback_data='add_goods_condition')
+    bargain_btn = InlineKeyboardButton('Торг', callback_data='add_goods_bargain')
+    finish_btn = InlineKeyboardButton('Добавить объявление', callback_data='add_goods_finish')
+    exit_btn = InlineKeyboardButton('Прервать добавление', callback_data='add_goods_exit')
+
+    add_goods_keyboard.row(name_btn, price_btn)
+    add_goods_keyboard.row(condition_btn, bargain_btn)
+    add_goods_keyboard.add(finish_btn)
+    add_goods_keyboard.add(exit_btn)
+
+    return add_goods_keyboard
+
+
+def get_condition_keyboard():
+    condition_keyboard = InlineKeyboardMarkup()
+    excellent = InlineKeyboardButton('Отличное', callback_data='condition_excellent')
+    good = InlineKeyboardButton('Хорошее', callback_data='condition_good')
+    satisfactory = InlineKeyboardButton('Удовлетворительное', callback_data='condition_satisfactory')
+    unsatisfactory = InlineKeyboardButton('Неудовлетворительное', callback_data='condition_unsatisfactory')
+    terrible = InlineKeyboardButton('Ужасное', callback_data='condition_terrible')
+    condition_keyboard.add(excellent)
+    condition_keyboard.add(good)
+    condition_keyboard.add(satisfactory)
+    condition_keyboard.add(unsatisfactory)
+    condition_keyboard.add(terrible)
+
+    return condition_keyboard
+
+
+def get_bargain_keyboard():
+    bargain_keyboard = InlineKeyboardMarkup()
+    yes = InlineKeyboardButton('Да', callback_data='bargain_yes')
+    no = InlineKeyboardButton('Нет', callback_data='bargain_no')
+    bargain_keyboard.row(yes, no)
+
+    return bargain_keyboard

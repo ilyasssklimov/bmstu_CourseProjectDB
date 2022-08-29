@@ -3,6 +3,7 @@ from src.model.landlord import Landlord
 from src.model.flat import Flat
 from src.model.neighborhood import Neighborhood
 from src.model.tenant import Tenant
+from src.model.goods import Goods
 
 
 class TenantController(GuestController):
@@ -65,3 +66,7 @@ class TenantController(GuestController):
                                   sex: str) -> list[Neighborhood]:
         neighborhoods = self._neighborhood_repo.get_neighborhoods_filters(neighbors, price, sex)
         return neighborhoods
+
+    def add_goods(self, goods: Goods) -> Goods:
+        new_goods = self._goods_repo.add_goods(goods)
+        return new_goods

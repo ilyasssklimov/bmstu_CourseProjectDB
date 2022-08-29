@@ -104,3 +104,22 @@ FILTER_NEIGHBORHOOD_FIELDS = {
     'price': 'Цена',
     'sex': 'Пол'
 }
+
+
+GOODS_FIELDS = {
+    'name': 'Название',
+    'price': 'Цена',
+    'condition': 'Состояние'
+}
+
+ALL_GOODS_FIELDS = {
+    'name': 'Название',
+    'price': 'Цена',
+    'condition': 'Состояние',
+    'bargain': 'Торг'
+}
+
+FILTER_GOODS_FIELDS = {
+    'price': 'Цена',
+    'condition': 'Состояние'
+}

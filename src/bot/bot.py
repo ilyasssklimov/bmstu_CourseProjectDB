@@ -9,7 +9,7 @@ from src.bot.config import API_TOKEN, IMG_PATH, EntityType as EType
 from src.bot.message import MESSAGE_START, MESSAGE_HELP
 from src.bot.states import (
     RegisterTenantStates, RegisterLandlordStates, AddFlatStates, ShowFlatsStates, GetLandlordInfoStates,
-    AddNeighborhoodStates, ShowNeighborhoodsStates
+    AddNeighborhoodStates, ShowNeighborhoodsStates, AddGoodsStates
 )
 from src.database.config import RolesDB
 from src.database.database import BaseDatabase
@@ -19,6 +19,7 @@ from src.controller.landlord import LandlordController
 from src.model.flat import Flat
 from src.model.landlord import Landlord
 from src.model.neighborhood import Neighborhood
+from src.model.goods import Goods
 from src.model.tenant import Tenant
 import src.bot.keyboard as kb
 
@@ -234,11 +235,15 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                         await state.finish()
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Регистрация успешно завершена')
-                        SayNoToHostelBot.check_tenant(callback_query.from_user.id)
-                        SayNoToHostelBot.check_landlord(callback_query.from_user.id)
+                        if 'tenant' in register_finish:
+                            SayNoToHostelBot.check_tenant(callback_query.from_user.id)
+                        elif 'landlord' in register_finish:
+                            SayNoToHostelBot.check_landlord(callback_query.from_user.id)
                     else:
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Во время регистрации произошла ошибка')
+
+                    await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
 
         case 'register_tenant_exit' | 'register_landlord_exit':
             await state.finish()
@@ -1013,12 +1018,12 @@ async def input_neighbors(message: types.Message, state: FSMContext):
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=AddNeighborhoodStates.PRICE_STATE)
-async def input_neighbors(message: types.Message, state: FSMContext):
+async def input_price(message: types.Message, state: FSMContext):
     await input_add_neighborhood_int(message, state, 'price')
 
 
 @SayNoToHostelBot.dispatcher.message_handler(state=AddNeighborhoodStates.PLACE_STATE)
-async def input_neighbors(message: types.Message, state: FSMContext):
+async def input_place(message: types.Message, state: FSMContext):
     await input_add_neighborhood_str(message, state, 'place')
 
 
@@ -1209,6 +1214,135 @@ async def paginate_neighborhoods(callback_query: types.CallbackQuery, state: FSM
 
         case _:
             await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+
+
+# ==============================================
+# Add goods
+# ==============================================
+
+async def add_goods_form(user_id: int, state: FSMContext):
+    info = await get_info_from_state(state, cfg.ALL_GOODS_FIELDS)
+    await SayNoToHostelBot.bot.send_message(user_id, info, reply_markup=kb.get_add_goods_keyboard())
+
+
+@SayNoToHostelBot.dispatcher.message_handler(commands='add_goods')
+async def add_goods_start(message: types.Message, state: FSMContext):
+    if SayNoToHostelBot.role != RolesDB.TENANT:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы '
+                                                                      'как арендатор')
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
+    else:
+        async with state.proxy() as data:
+            data['photo'] = []
+        await AddGoodsStates.START_STATE.set()
+        await add_goods_form(message.from_user.id, state)
+
+
+@SayNoToHostelBot.dispatcher.callback_query_handler(state=AddGoodsStates.START_STATE, text_contains='add_goods')
+async def add_goods(callback_query: types.CallbackQuery, state: FSMContext):
+    await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+    match callback_query.data:
+        case 'add_goods_name':
+            await AddGoodsStates.NAME_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите название')
+
+        case 'add_goods_price':
+            await AddGoodsStates.PRICE_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Введите цену')
+
+        case 'add_goods_condition':
+            await AddGoodsStates.CONDITION_STATE.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Укажите состояние',
+                                                    reply_markup=kb.get_condition_keyboard())
+
+        case 'add_goods_bargain':
+            await AddGoodsStates.BARGAIN.set()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, 'Укажите, возможен ли торг',
+                                                    reply_markup=kb.get_bargain_keyboard())
+
+        case 'add_goods_finish':
+            async with state.proxy() as data:
+                fields = cfg.GOODS_FIELDS
+                blank = [fields[field] for field in fields
+                         if field not in data]
+                if blank:
+                    await SayNoToHostelBot.bot.send_message(
+                        callback_query.from_user.id, 'Обязательными полями для ввода являются: ' + ', '.join(blank))
+                    await add_goods_form(callback_query.from_user.id, state)
+                else:
+                    bargain = data['bargain'] if 'bargain' in data else 'null'
+
+                    tenant_id = callback_query.from_user.id
+                    goods_data = [data[field] for field in fields]
+                    new_goods = Goods(-1, tenant_id, *goods_data, bargain)
+                    goods = SayNoToHostelBot.controller.add_goods(new_goods)
+
+                    if goods:
+                        await state.finish()
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Объявление успешно добавлено')
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
+                    else:
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                                'Во время добавления объявления произошла ошибка')
+
+        case 'add_goods_exit':
+            await state.finish()
+            await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
+
+
+async def input_add_goods_str(message: types.Message, state: FSMContext, field: str):
+    async with state.proxy() as data:
+        data[field] = message.text
+
+    await AddGoodsStates.START_STATE.set()
+    await add_goods_form(message.from_user.id, state)
+
+
+async def input_add_goods_int(message: types.Message, state: FSMContext, field: str):
+    try:
+        value = int(message.text)
+        assert value > 0
+    except ValueError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Значение должно быть целым числом')
+    except AssertionError:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Значение не может быть отрицательным')
+    else:
+        async with state.proxy() as data:
+            data[field] = value
+    finally:
+        await AddGoodsStates.START_STATE.set()
+        await add_goods_form(message.from_user.id, state)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddGoodsStates.NAME_STATE)
+async def input_name(message: types.Message, state: FSMContext):
+    await input_add_goods_str(message, state, 'name')
+
+
+@SayNoToHostelBot.dispatcher.message_handler(state=AddGoodsStates.PRICE_STATE)
+async def input_price(message: types.Message, state: FSMContext):
+    await input_add_goods_int(message, state, 'price')
+
+
+@SayNoToHostelBot.dispatcher.callback_query_handler(state=AddGoodsStates.CONDITION_STATE, text_contains='condition')
+async def input_condition(callback_query: types.CallbackQuery, state: FSMContext):
+    await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+
+    async with state.proxy() as data:
+        data['condition'] = callback_query.data.split('_')[1][0].upper()
+    await AddGoodsStates.START_STATE.set()
+    await add_goods_form(callback_query.from_user.id, state)
+
+
+@SayNoToHostelBot.dispatcher.callback_query_handler(state=AddGoodsStates.BARGAIN, text_contains='bargain')
+async def input_bargain(callback_query: types.CallbackQuery, state: FSMContext):
+    await SayNoToHostelBot.bot.answer_callback_query(callback_query.id)
+
+    async with state.proxy() as data:
+        data['bargain'] = True if callback_query.data == 'bargain_yes' else False
+    await AddGoodsStates.START_STATE.set()
+    await add_goods_form(callback_query.from_user.id, state)
 
 
 # ==============================================

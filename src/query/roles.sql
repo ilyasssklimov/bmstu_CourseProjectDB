@@ -35,6 +35,7 @@ GRANT SELECT, INSERT ON public.landlord TO guest;
 GRANT SELECT ON public.flat TO guest;
 GRANT SELECT ON public.flat_photo TO guest;
 GRANT SELECT ON public.neighborhood TO guest;
+GRANT SELECT ON public.goods TO guest;
 
 -- create tenant role
 SELECT public.delete_role('tenant');
@@ -49,6 +50,8 @@ GRANT INSERT, SELECT, DELETE, UPDATE ON public.subscription_flat TO tenant;
 GRANT INSERT, SELECT, DELETE ON public.subscription_metro TO tenant;
 GRANT INSERT, SELECT ON public.neighborhood TO tenant;
 GRANT USAGE, SELECT ON SEQUENCE neighborhood_id_seq TO tenant;
+GRANT INSERT, SELECT ON public.goods TO tenant;
+GRANT USAGE, SELECT ON SEQUENCE goods_id_seq TO tenant;
 
 -- create landlord role
 SELECT public.delete_role('landlord');
@@ -61,6 +64,8 @@ GRANT INSERT, SELECT ON public.flat_photo TO landlord;
 GRANT SELECT ON public.subscription_landlord TO landlord;
 GRANT SELECT ON public.subscription_flat TO landlord;
 GRANT SELECT ON public.subscription_metro TO landlord;
+GRANT SELECT ON public.neighborhood TO landlord;
+GRANT SELECT ON public.goods TO landlord;
 
 -- create admin role
 SELECT public.delete_role('admin');

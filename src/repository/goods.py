@@ -47,7 +47,7 @@ class GoodsRepository:
             return new_goods
         except Exception as e:
             logging.error(e)
-            logging.error(f'Some error while adding goods with owner_id = {goods.onwner_id}')
+            logging.error(f'Some error while adding goods with owner_id = {goods.owner_id}')
 
         return Goods()
 

@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QTableWidgetItem, QAbstractItemView, QMessageBox
 from src.admin_panel.design import Ui_MainWindow
 from src.bot.config import EntityType as EType
 from src.controller.admin import AdminController
+from src.database.config import RolesDB
 from src.database.database import BaseDatabase
 from src.generate_data.config import MOSCOW_FLATS_URL
 from src.generate_data.data import DataGenerator
@@ -24,6 +25,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.upd_data: list[Tenant | Landlord | Flat | Neighborhood | Goods] = []
 
         self.__db = database
+        self.__db.set_role(RolesDB.ADMIN)
         self.controller: AdminController = AdminController(self.__db)
         self.gen_data: DataGenerator = DataGenerator(self.__db)
 

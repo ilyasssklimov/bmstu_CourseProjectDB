@@ -11,7 +11,7 @@ from src.logger.config import TargetType
 
 def main():
     init_logger(TargetType.ADMIN)
-    database = PgDatabase(DB_DEFAULT_PARAMS)
+    database = PgDatabase(DB_DEFAULT_PARAMS, init_files=False)
 
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow(database)

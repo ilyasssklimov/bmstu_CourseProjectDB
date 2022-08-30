@@ -442,6 +442,11 @@ async def add_flat_filter(callback_query: types.CallbackQuery, state: FSMContext
                 await show_flat_form(callback_query.from_user.id, state)
 
         case 'show_flats_subscribe':
+            if SayNoToHostelBot.role != RolesDB.TENANT:
+                await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                                        'Вы должны быть зарегистрированы как арендатор')
+                return
+
             async with state.proxy() as data:
                 price = (tuple(data['price'].split(' - '))) if 'price' in data else ()
                 rooms = (tuple(data['rooms'].split(' - '))) if 'rooms' in data else ()
@@ -505,6 +510,18 @@ async def input_metro(message: types.Message, state: FSMContext):
 
     await ShowFlatsStates.START_STATE.set()
     await show_flat_form(message.from_user.id, state)
+
+
+@SayNoToHostelBot.dispatcher.message_handler(commands='unsubscribe_flat')
+async def unsubscribe_flat(message: types.Message):
+    if SayNoToHostelBot.role != RolesDB.TENANT:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы как арендатор')
+        return
+
+    if SayNoToHostelBot.controller.unsubscribe_flat(message.from_user.id):
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы успешно удалили подписку с квартиры')
+    else:
+        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Во время удаления подписки произошла ошибка')
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_flats')

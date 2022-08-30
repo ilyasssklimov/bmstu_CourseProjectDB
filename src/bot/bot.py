@@ -345,7 +345,6 @@ async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext)
 # Show flats
 # ==============================================
 
-
 async def show_flat(chat_id: int, flat: Flat, photos: list[str], paginate: bool = True) -> list[types.Message]:
     flat_messages: list[types.Message] = []
 

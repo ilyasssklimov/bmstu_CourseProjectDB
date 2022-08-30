@@ -5,6 +5,7 @@ ACTIONS = '''/start - Начать пользоваться
 /add_flat - Добавить квартиру
 /show_flats - Показать все квартиры
 /show_flats_filters - Показать квартиры с фильтрами (подписаться)
+/unsubscribe_flat - Удалить подписку с квартиры
 /add_neighborhood - Добавить объявление о соседстве
 /show_neighborhoods - Показать объявления о соседстве
 /show_neighborhoods_filters  - Показать объявления о соседстве с фильтрами

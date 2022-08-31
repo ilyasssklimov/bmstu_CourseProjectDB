@@ -11,8 +11,9 @@ from src.bot.states import (
     RegisterTenantStates, RegisterLandlordStates, AddFlatStates, ShowFlatsStates, GetLandlordInfoStates,
     AddNeighborhoodStates, ShowNeighborhoodsStates, AddGoodsStates, ShowGoodsStates
 )
-from src.database.config import RolesDB
+from src.database.config import RolesDB, DB_DEFAULT_PARAMS
 from src.database.database import BaseDatabase
+from src.database.pg_database import PgDatabase
 from src.controller.guest import GuestController
 from src.controller.tenant import TenantController
 from src.controller.landlord import LandlordController
@@ -27,9 +28,9 @@ import src.bot.keyboard as kb
 class SayNoToHostelBot:
     bot = Bot(token=API_TOKEN)
     dispatcher = Dispatcher(bot, storage=MemoryStorage())
-    database: BaseDatabase
-    controller: GuestController | TenantController | LandlordController
-    role: RolesDB
+    database: dict[int, BaseDatabase] = {}
+    controller: dict[int, GuestController | TenantController | LandlordController] = {}
+    role: dict[int, RolesDB] = {}
 
     controllers_dict = {
         RolesDB.GUEST: GuestController,
@@ -38,34 +39,35 @@ class SayNoToHostelBot:
     }
 
     @classmethod
-    def init_db(cls, database: BaseDatabase):
+    def init_db(cls, database: BaseDatabase, user_id: int):
         assert issubclass(type(database), BaseDatabase)
-        cls.database = database
+        if user_id not in cls.database:
+            cls.database[user_id] = database
 
     @classmethod
-    def set_role(cls, role: RolesDB):
+    def set_role(cls, role: RolesDB, user_id: int):
         if not isinstance(role, RolesDB):
             raise ValueError('You need use object of RolesDB to set role')
 
-        cls.role = role
-        cls.database.set_role(role)
+        cls.role[user_id] = role
+        cls.database[user_id].set_role(role)
         if role in cls.controllers_dict:
-            cls.controller = cls.controllers_dict[role](cls.database)
+            cls.controller[user_id] = cls.controllers_dict[role](cls.database[user_id])
         else:
             raise ValueError(f'There is no such role \'{role}\'')
 
     @classmethod
-    def check_tenant(cls, user_id):
-        check_res = cls.controller.check_tenant(user_id)
+    def check_tenant(cls, user_id: int):
+        check_res = cls.controller[user_id].check_tenant(user_id)
         if check_res:
-            cls.set_role(RolesDB.TENANT)
+            cls.set_role(RolesDB.TENANT, user_id)
         return check_res
 
     @classmethod
-    def check_landlord(cls, user_id):
-        check_res = cls.controller.check_landlord(user_id)
+    def check_landlord(cls, user_id: int):
+        check_res = cls.controller[user_id].check_landlord(user_id)
         if check_res:
-            cls.set_role(RolesDB.LANDLORD)
+            cls.set_role(RolesDB.LANDLORD, user_id)
         return check_res
 
     @staticmethod
@@ -75,12 +77,16 @@ class SayNoToHostelBot:
 
     @classmethod
     def close_db(cls):
-        cls.database.disconnect_db()
+        for database in cls.database.values():
+            database.disconnect_db()
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='start')
 async def send_welcome(message: types.Message):
     user_id = message.from_user.id
+    database = PgDatabase(DB_DEFAULT_PARAMS)
+    SayNoToHostelBot.init_db(database, user_id)
+    SayNoToHostelBot.set_role(RolesDB.GUEST, user_id)
     logging.info('Starting bot')
     await SayNoToHostelBot.bot.send_message(user_id, MESSAGE_START)
 
@@ -224,10 +230,10 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                         solvency = data['solvency'] if 'solvency' in data else 'null'
                         register_data.insert(-1, qualities)
                         tenant = Tenant(*register_data, solvency, callback_query.from_user.username)
-                        user = SayNoToHostelBot.controller.register_tenant(tenant)
+                        user = SayNoToHostelBot.controller[callback_query.from_user.id].register_tenant(tenant)
                     elif 'landlord' in register_finish:
                         landlord = Landlord(*register_data, callback_query.from_user.username)
-                        user = SayNoToHostelBot.controller.register_landlord(landlord)
+                        user = SayNoToHostelBot.controller[callback_query.from_user.id].register_landlord(landlord)
                     else:
                         raise ValueError('Invalid param to callback')
 
@@ -239,11 +245,10 @@ async def register_tenant(callback_query: types.CallbackQuery, state: FSMContext
                             SayNoToHostelBot.check_tenant(callback_query.from_user.id)
                         elif 'landlord' in register_finish:
                             SayNoToHostelBot.check_landlord(callback_query.from_user.id)
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
                     else:
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Во время регистрации произошла ошибка')
-
-                    await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
 
         case 'register_tenant_exit' | 'register_landlord_exit':
             await state.finish()
@@ -345,29 +350,29 @@ async def input_solvency(callback_query: types.CallbackQuery, state: FSMContext)
 # Show flats
 # ==============================================
 
-async def show_flat(chat_id: int, flat: Flat, photos: list[str], paginate: bool = True) -> list[types.Message]:
+async def show_flat(user_id: int, flat: Flat, photos: list[str], paginate: bool = True) -> list[types.Message]:
     flat_messages: list[types.Message] = []
 
     if photos[:-1]:
         media = types.MediaGroup()
         for photo in photos[:-1]:
             media.attach_photo(types.InputFile(photo))
-        flat_messages += await SayNoToHostelBot.bot.send_media_group(chat_id, media=media)
+        flat_messages += await SayNoToHostelBot.bot.send_media_group(user_id, media=media)
 
-    owner = SayNoToHostelBot.controller.get_landlord(flat.owner_id)
+    owner = SayNoToHostelBot.controller[user_id].get_landlord(flat.owner_id)
     username = owner.username
     info = f'Владелец: {owner.full_name}'
-    if username:
+    if username != 'None':
         info += f' (@{username})'
     info += (f'\nТелефон: {owner.phone}\nЦена: {flat.price} ₽\nКомнаты: {flat.rooms}\nПлощадь: {flat.square} м²\n'
              f'Адрес: {flat.address}\nБлижайшее метро: {flat.metro}\nЭтаж: {flat.floor}/{flat.max_floor}')
 
     if photos[-1:]:
-        flat_messages.append(await SayNoToHostelBot.bot.send_photo(chat_id, types.InputFile(photos[-1]), caption=info))
-        flat_messages.append(await SayNoToHostelBot.bot.send_message(chat_id, f'Описание: {flat.description}'))
+        flat_messages.append(await SayNoToHostelBot.bot.send_photo(user_id, types.InputFile(photos[-1]), caption=info))
+        flat_messages.append(await SayNoToHostelBot.bot.send_message(user_id, f'Описание: {flat.description}'))
     else:
         info += f'\nОписание: {flat.description}'
-        flat_messages.append(await SayNoToHostelBot.bot.send_message(chat_id, info))
+        flat_messages.append(await SayNoToHostelBot.bot.send_message(user_id, info))
 
     if paginate:
         await flat_messages[-1].edit_reply_markup(reply_markup=kb.get_pagination_keyboard())
@@ -381,7 +386,8 @@ async def show_flat_form(user_id: int, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_flats_filters')
 async def show_flats_filters_start(message: types.Message, state: FSMContext):
-    if SayNoToHostelBot.role != RolesDB.TENANT and SayNoToHostelBot.role != RolesDB.LANDLORD:
+    user_id = message.from_user.id
+    if SayNoToHostelBot.role[user_id] != RolesDB.TENANT and SayNoToHostelBot.role[user_id] != RolesDB.LANDLORD:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы')
     else:
         async with state.proxy() as data:
@@ -421,7 +427,8 @@ async def add_flat_filter(callback_query: types.CallbackQuery, state: FSMContext
                 square = (tuple(data['square'].split(' - '))) if 'square' in data else ()
                 metro = data['metro'] if 'metro' in data else []
 
-                flats, flat_photos = SayNoToHostelBot.controller.get_flats_filters(price, rooms, square, metro)
+                user_id = callback_query.from_user.id
+                flats, flat_photos = SayNoToHostelBot.controller[user_id].get_flats_filters(price, rooms, square, metro)
 
             if flats:
                 await state.finish()
@@ -441,7 +448,7 @@ async def add_flat_filter(callback_query: types.CallbackQuery, state: FSMContext
                 await show_flat_form(callback_query.from_user.id, state)
 
         case 'show_flats_subscribe':
-            if SayNoToHostelBot.role != RolesDB.TENANT:
+            if SayNoToHostelBot.role[callback_query.from_user.id] != RolesDB.TENANT:
                 await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                         'Вы должны быть зарегистрированы как арендатор')
                 return
@@ -452,14 +459,15 @@ async def add_flat_filter(callback_query: types.CallbackQuery, state: FSMContext
                 square = (tuple(data['square'].split(' - '))) if 'square' in data else ()
                 metro = data['metro'] if 'metro' in data else []
 
-                SayNoToHostelBot.controller.unsubscribe_flat(callback_query.from_user.id)
-                if SayNoToHostelBot.controller.subscribe_flat(callback_query.from_user.id, price, rooms, square, metro):
-                    await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                user_id = callback_query.from_user.id
+                SayNoToHostelBot.controller[user_id].unsubscribe_flat(user_id)
+                if SayNoToHostelBot.controller[user_id].subscribe_flat(user_id, price, rooms, square, metro):
+                    await SayNoToHostelBot.bot.send_message(user_id,
                                                             'Вы успешно подписались на квартиры с данными параметрами')
                 else:
-                    await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                    await SayNoToHostelBot.bot.send_message(user_id,
                                                             'Во время подписки произошла ошибка')
-                await show_flat_form(callback_query.from_user.id, state)
+                await show_flat_form(user_id, state)
 
         case 'show_flats_exit':
             await state.finish()
@@ -513,26 +521,29 @@ async def input_metro(message: types.Message, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='unsubscribe_flat')
 async def unsubscribe_flat(message: types.Message):
-    if SayNoToHostelBot.role != RolesDB.TENANT:
+    if SayNoToHostelBot.role[message.from_user.id] != RolesDB.TENANT:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы как арендатор')
         return
 
-    if SayNoToHostelBot.controller.unsubscribe_flat(message.from_user.id):
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы успешно удалили подписку с квартиры')
+    user_id = message.from_user.id
+    if SayNoToHostelBot.controller[user_id].unsubscribe_flat(user_id):
+        await SayNoToHostelBot.bot.send_message(user_id, 'Вы успешно удалили подписку с квартиры')
     else:
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Во время удаления подписки произошла ошибка')
+        await SayNoToHostelBot.bot.send_message(user_id, 'Во время удаления подписки произошла ошибка')
+    await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_flats')
 async def show_flats(message: types.Message, state: FSMContext):
-    flats, flat_photos = SayNoToHostelBot.controller.get_flats()
+    user_id = message.from_user.id
+    flats, flat_photos = SayNoToHostelBot.controller[user_id].get_flats()
     if not flats:
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Квартир не найдено')
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
+        await SayNoToHostelBot.bot.send_message(user_id, 'Квартир не найдено')
+        await SayNoToHostelBot.bot.send_message(user_id, MESSAGE_HELP)
         return
 
     flat, photos = flats[0], flat_photos[0]
-    flat_messages = await show_flat(message.chat.id, flat, photos)
+    flat_messages = await show_flat(user_id, flat, photos)
 
     if flat_messages:
         async with state.proxy() as data:
@@ -579,10 +590,9 @@ async def paginate_flats(callback_query: types.CallbackQuery, state: FSMContext)
                 data['message'] = flat_messages
 
         case 'pagination_like':
-            if SayNoToHostelBot.role != RolesDB.TENANT:
+            if SayNoToHostelBot.role[callback_query.from_user.id] != RolesDB.TENANT:
                 await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                         'Вы должны быть зарегистрированы как арендатор')
-                await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
             else:
                 async with state.proxy() as data:
                     tenant_id = callback_query.from_user.id
@@ -590,9 +600,9 @@ async def paginate_flats(callback_query: types.CallbackQuery, state: FSMContext)
                     cur_flat = data['cur_flat']
                     flat, flat_photos = flats[cur_flat], photos[cur_flat]
 
-                    if not SayNoToHostelBot.controller.check_like_flat(tenant_id, flat.id):
-                        tenants = SayNoToHostelBot.controller.get_likes_flat(flat.id)
-                        cur_tenant = SayNoToHostelBot.controller.get_tenant(tenant_id)
+                    if not SayNoToHostelBot.controller[tenant_id].check_like_flat(tenant_id, flat.id):
+                        tenants = SayNoToHostelBot.controller[tenant_id].get_likes_flat(flat.id)
+                        cur_tenant = SayNoToHostelBot.controller[tenant_id].get_tenant(tenant_id)
                         name = cur_tenant.full_name + f' (@{callback_query.from_user.username})'
 
                         for tenant in tenants:
@@ -600,7 +610,7 @@ async def paginate_flats(callback_query: types.CallbackQuery, state: FSMContext)
                                                                     f'Пользователь с именем {name} оценил квартиру')
                             await show_flat(tenant.id, flat, flat_photos, False)
 
-                        if SayNoToHostelBot.controller.like_flat(tenant_id, flat.id):
+                        if SayNoToHostelBot.controller[tenant_id].like_flat(tenant_id, flat.id):
                             await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                     'Вы успешно поставили отметку \'Нравится\' на '
                                                                     'данную квартиру')
@@ -609,7 +619,7 @@ async def paginate_flats(callback_query: types.CallbackQuery, state: FSMContext)
                                                                     'При добавлении отметки "Нравится" '
                                                                     'произошла ошибка')
                     else:
-                        if SayNoToHostelBot.controller.unlike_flat(tenant_id, flat.id):
+                        if SayNoToHostelBot.controller[tenant_id].unlike_flat(tenant_id, flat.id):
                             await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                     'Вы успешно убрали отметку \'Нравится\' на '
                                                                     'данную квартиру')
@@ -636,7 +646,7 @@ async def add_flat_form(user_id: int, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='add_flat')
 async def add_flat_start(message: types.Message, state: FSMContext):
-    if SayNoToHostelBot.role != RolesDB.LANDLORD:
+    if SayNoToHostelBot.role[message.from_user.id] != RolesDB.LANDLORD:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы '
                                                                       'как арендодатель')
         await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
@@ -702,13 +712,13 @@ async def add_flat(callback_query: types.CallbackQuery, state: FSMContext):
                     max_floor = data['max_floor'] if 'max_floor' in data else 0
                     description = data['description'] if 'description' in data else ''
                     new_flat = Flat(-1, owner_id, *flat_data, metro, floor, max_floor, description)
-                    flat = SayNoToHostelBot.controller.add_flat(new_flat)
+                    flat = SayNoToHostelBot.controller[owner_id].add_flat(new_flat)
                     if flat:
                         photos = []
                         for photo in data['photo']:
-                            new_photo = SayNoToHostelBot.controller.add_photo(flat.id, photo)
+                            new_photo = SayNoToHostelBot.controller[owner_id].add_photo(flat.id, photo)
                             if not new_photo:
-                                await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
+                                await SayNoToHostelBot.bot.send_message(owner_id,
                                                                         'Во время добавления фото произошла ошибка')
                             else:
                                 photos.append(new_photo)
@@ -717,8 +727,8 @@ async def add_flat(callback_query: types.CallbackQuery, state: FSMContext):
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Квартира успешно добавлена')
 
-                        tenants = SayNoToHostelBot.controller.get_tenants_subscription(owner_id)
-                        tenants += SayNoToHostelBot.controller.get_subscribed_flat_tenants(
+                        tenants = SayNoToHostelBot.controller[owner_id].get_tenants_subscription(owner_id)
+                        tenants += SayNoToHostelBot.controller[owner_id].get_subscribed_flat_tenants(
                             flat.price, flat.rooms, flat.square, flat.metro
                         )
                         for tenant in tenants:
@@ -834,7 +844,7 @@ async def input_photo(message: types.Message, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='get_landlord_info')
 async def get_landlord_info(message: types.Message):
-    if SayNoToHostelBot.role != RolesDB.TENANT:
+    if SayNoToHostelBot.role[message.from_user.id] != RolesDB.TENANT:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы как арендатор')
         await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
     else:
@@ -844,7 +854,7 @@ async def get_landlord_info(message: types.Message):
 
 @SayNoToHostelBot.dispatcher.message_handler(state=GetLandlordInfoStates.NAME_STATE)
 async def input_landlord_name(message: types.Message, state: FSMContext):
-    landlord = SayNoToHostelBot.controller.get_landlord(message.text)
+    landlord = SayNoToHostelBot.controller[message.from_user.id].get_landlord(message.text)
     if not landlord:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Арендодатель с данным именем не зарегистрирован')
         await state.finish()
@@ -876,15 +886,15 @@ async def rate_landlord(callback_query: types.CallbackQuery, state: FSMContext):
             async with state.proxy() as data:
                 tenant_id = callback_query.from_user.id
                 landlord_id = data['landlord'].id
-                if not SayNoToHostelBot.controller.check_subscription_landlord(tenant_id, landlord_id):
-                    if SayNoToHostelBot.controller.subscribe_landlord(tenant_id, landlord_id):
+                if not SayNoToHostelBot.controller[tenant_id].check_subscription_landlord(tenant_id, landlord_id):
+                    if SayNoToHostelBot.controller[tenant_id].subscribe_landlord(tenant_id, landlord_id):
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Вы успешно подписались на арендодателя')
                     else:
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Во время подписки на арендодателя произошла ошибка')
                 else:
-                    if SayNoToHostelBot.controller.unsubscribe_landlord(tenant_id, landlord_id):
+                    if SayNoToHostelBot.controller[tenant_id].unsubscribe_landlord(tenant_id, landlord_id):
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Вы успешно отписались от арендодателя')
                     else:
@@ -899,7 +909,7 @@ async def rate_landlord(callback_query: types.CallbackQuery, state: FSMContext):
             async with state.proxy() as data:
                 landlord = data['landlord']
                 landlord.set_rating(data['rating'])
-            SayNoToHostelBot.controller.update_landlord(landlord)
+            SayNoToHostelBot.controller[callback_query.from_user.id].update_landlord(landlord)
             await state.finish()
             await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
 
@@ -934,7 +944,7 @@ async def add_neighborhood_form(user_id: int, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='add_neighborhood')
 async def add_neighborhood_start(message: types.Message, state: FSMContext):
-    if SayNoToHostelBot.role != RolesDB.TENANT:
+    if SayNoToHostelBot.role[message.from_user.id] != RolesDB.TENANT:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы '
                                                                       'как арендатор')
         await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
@@ -988,7 +998,7 @@ async def add_neighborhood(callback_query: types.CallbackQuery, state: FSMContex
                     neighbor_data = [data[field] for field in fields]
                     neighbor_data.insert(-1, place)
                     new_neighborhood = Neighborhood(-1, tenant_id, *neighbor_data, preferences)
-                    neighborhood = SayNoToHostelBot.controller.add_neighborhood(new_neighborhood)
+                    neighborhood = SayNoToHostelBot.controller[tenant_id].add_neighborhood(new_neighborhood)
 
                     if neighborhood:
                         await state.finish()
@@ -1066,17 +1076,17 @@ async def input_preferences(message: types.Message, state: FSMContext):
 # Show neighborhood
 # ==============================================
 
-async def show_neighborhood(chat_id: int, neighborhood: Neighborhood, paginate: bool = True) -> types.Message:
-    tenant = SayNoToHostelBot.controller.get_tenant(neighborhood.tenant_id)
+async def show_neighborhood(user_id: int, neighborhood: Neighborhood, paginate: bool = True) -> types.Message:
+    tenant = SayNoToHostelBot.controller[user_id].get_tenant(neighborhood.tenant_id)
     username = tenant.username
     info = f'Арендатор: {tenant.full_name}'
-    if username:
+    if username != 'None':
         info += f' (@{username})'
     info += (f'\nКоличество соседей: {neighborhood.neighbors}\nЖелаемая цена: {neighborhood.price} ₽\n'
              f'Местоположение: {neighborhood.place}\nЖелаемый пол: {neighborhood.sex}\n'
              f'Личные предпочтения: {neighborhood.preferences}')
 
-    message = await SayNoToHostelBot.bot.send_message(chat_id, info)
+    message = await SayNoToHostelBot.bot.send_message(user_id, info)
     if paginate:
         await message.edit_reply_markup(reply_markup=kb.get_pagination_keyboard(True))
 
@@ -1090,7 +1100,8 @@ async def show_neighborhood_form(user_id: int, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_neighborhoods_filters')
 async def show_neighborhoods_filters_start(message: types.Message, state: FSMContext):
-    if SayNoToHostelBot.role != RolesDB.TENANT and SayNoToHostelBot.role != RolesDB.LANDLORD:
+    user_id = message.from_user.id
+    if SayNoToHostelBot.role[user_id] != RolesDB.TENANT and SayNoToHostelBot.role[user_id] != RolesDB.LANDLORD:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы')
     else:
         await ShowNeighborhoodsStates.START_STATE.set()
@@ -1122,12 +1133,13 @@ async def add_neighborhood_filter(callback_query: types.CallbackQuery, state: FS
                 price = (tuple(data['price'].split(' - '))) if 'price' in data else ()
                 sex = data['sex'] if 'sex' in data else ''
 
-                neighborhoods = SayNoToHostelBot.controller.get_neighborhoods_filters(neighbors, price, sex)
+                user_id = callback_query.from_user.id
+                neighborhoods = SayNoToHostelBot.controller[user_id].get_neighborhoods_filters(neighbors, price, sex)
 
             if neighborhoods:
                 await state.finish()
 
-                neighborhood_message = await show_neighborhood(callback_query.from_user.id, neighborhoods[0])
+                neighborhood_message = await show_neighborhood(user_id, neighborhoods[0])
                 if neighborhood_message:
                     async with state.proxy() as data:
                         data['message'] = neighborhood_message
@@ -1135,9 +1147,8 @@ async def add_neighborhood_filter(callback_query: types.CallbackQuery, state: FS
                         data['cur_neighborhood'] = 0
                     await ShowNeighborhoodsStates.PAGINATION_STATE.set()
             else:
-                await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
-                                                        'По данным параметрам объявлений не найдено')
-                await show_neighborhood_form(callback_query.from_user.id, state)
+                await SayNoToHostelBot.bot.send_message(user_id, 'По данным параметрам объявлений не найдено')
+                await show_neighborhood_form(user_id, state)
 
         case 'show_neighborhoods_exit':
             await state.finish()
@@ -1173,13 +1184,14 @@ async def input_price(message: types.Message, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_neighborhoods')
 async def show_neighborhoods(message: types.Message, state: FSMContext):
-    neighborhoods = SayNoToHostelBot.controller.get_neighborhoods()
+    user_id = message.from_user.id
+    neighborhoods = SayNoToHostelBot.controller[user_id].get_neighborhoods()
     if not neighborhoods:
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Объявлений не найдено')
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
+        await SayNoToHostelBot.bot.send_message(user_id, 'Объявлений не найдено')
+        await SayNoToHostelBot.bot.send_message(user_id, MESSAGE_HELP)
         return
 
-    neighborhood_message = await show_neighborhood(message.from_user.id, neighborhoods[0])
+    neighborhood_message = await show_neighborhood(user_id, neighborhoods[0])
     if neighborhood_message:
         async with state.proxy() as data:
             data['message'] = neighborhood_message
@@ -1241,7 +1253,7 @@ async def add_goods_form(user_id: int, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='add_goods')
 async def add_goods_start(message: types.Message, state: FSMContext):
-    if SayNoToHostelBot.role != RolesDB.TENANT:
+    if SayNoToHostelBot.role[message.from_user.id] != RolesDB.TENANT:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы '
                                                                       'как арендатор')
         await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
@@ -1289,7 +1301,7 @@ async def add_goods(callback_query: types.CallbackQuery, state: FSMContext):
                     tenant_id = callback_query.from_user.id
                     goods_data = [data[field] for field in fields]
                     new_goods = Goods(-1, tenant_id, *goods_data, bargain)
-                    goods = SayNoToHostelBot.controller.add_goods(new_goods)
+                    goods = SayNoToHostelBot.controller[tenant_id].add_goods(new_goods)
 
                     if goods:
                         await state.finish()
@@ -1364,17 +1376,17 @@ async def input_bargain(callback_query: types.CallbackQuery, state: FSMContext):
 # Show goods
 # ==============================================
 
-async def show_goods_one(chat_id: int, goods: Goods, paginate: bool = True) -> types.Message:
-    owner = SayNoToHostelBot.controller.get_tenant(goods.owner_id)
+async def show_goods_one(user_id: int, goods: Goods, paginate: bool = True) -> types.Message:
+    owner = SayNoToHostelBot.controller[user_id].get_tenant(goods.owner_id)
     username = owner.username
     info = f'Владелец: {owner.full_name}'
-    if username:
+    if username != 'None':
         info += f' (@{username})'
     info += (f'\nНазвание: {goods.name}\nЦена: {goods.price} ₽\n'
              f'Состояние: {cfg.GOODS_CONDITIONS[goods.condition]}\n'
              f'Возможен ли торг: {cfg.GOODS_BARGAIN[goods.bargain]}\n')
 
-    message = await SayNoToHostelBot.bot.send_message(chat_id, info)
+    message = await SayNoToHostelBot.bot.send_message(user_id, info)
     if paginate:
         await message.edit_reply_markup(reply_markup=kb.get_pagination_keyboard(True))
 
@@ -1388,7 +1400,8 @@ async def show_goods_form(user_id: int, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_goods_filters')
 async def show_goods_filters_start(message: types.Message, state: FSMContext):
-    if SayNoToHostelBot.role != RolesDB.TENANT and SayNoToHostelBot.role != RolesDB.LANDLORD:
+    user_id = message.from_user.id
+    if SayNoToHostelBot.role[user_id] != RolesDB.TENANT and SayNoToHostelBot.role[user_id] != RolesDB.LANDLORD:
         await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Вы должны быть зарегистрированы')
     else:
         await ShowGoodsStates.START_STATE.set()
@@ -1414,12 +1427,13 @@ async def add_goods_filter(callback_query: types.CallbackQuery, state: FSMContex
                 price = (tuple(data['price'].split(' - '))) if 'price' in data else ()
                 condition = data['condition'] if 'condition' in data else ''
 
-                goods = SayNoToHostelBot.controller.get_goods_filters(price, condition)
+                user_id = callback_query.from_user.id
+                goods = SayNoToHostelBot.controller[user_id].get_goods_filters(price, condition)
 
             if goods:
                 await state.finish()
 
-                goods_message = await show_goods_one(callback_query.from_user.id, goods[0])
+                goods_message = await show_goods_one(user_id, goods[0])
                 if goods_message:
                     async with state.proxy() as data:
                         data['message'] = goods_message
@@ -1427,9 +1441,8 @@ async def add_goods_filter(callback_query: types.CallbackQuery, state: FSMContex
                         data['cur_goods'] = 0
                     await ShowGoodsStates.PAGINATION_STATE.set()
             else:
-                await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
-                                                        'По данным параметрам объявлений не найдено')
-                await show_goods_form(callback_query.from_user.id, state)
+                await SayNoToHostelBot.bot.send_message(user_id, 'По данным параметрам объявлений не найдено')
+                await show_goods_form(user_id, state)
 
         case 'show_goods_exit':
             await state.finish()
@@ -1460,13 +1473,14 @@ async def input_price(message: types.Message, state: FSMContext):
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='show_goods')
 async def show_goods(message: types.Message, state: FSMContext):
-    goods = SayNoToHostelBot.controller.get_goods()
+    user_id = message.from_user.id
+    goods = SayNoToHostelBot.controller[user_id].get_goods()
     if not goods:
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, 'Объявлений не найдено')
-        await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
+        await SayNoToHostelBot.bot.send_message(user_id, 'Объявлений не найдено')
+        await SayNoToHostelBot.bot.send_message(user_id, MESSAGE_HELP)
         return
 
-    goods_message = await show_goods_one(message.from_user.id, goods[0])
+    goods_message = await show_goods_one(user_id, goods[0])
     if goods_message:
         async with state.proxy() as data:
             data['message'] = goods_message

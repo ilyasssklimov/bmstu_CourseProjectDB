@@ -4,7 +4,7 @@
 
 -- create table public.tenant
 CREATE TABLE IF NOT EXISTS public.tenant (
-    id INTEGER,
+    id BIGINT,
     full_name VARCHAR(100),
     sex CHAR,
     city VARCHAR(30),
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.tenant (
 
 -- create table public.landlord
 CREATE TABLE IF NOT EXISTS public.landlord (
-    id INTEGER,
+    id BIGINT,
     full_name VARCHAR(100),
     city VARCHAR(30),
     rating REAL,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS public.landlord (
 -- create table public.flat
 CREATE TABLE IF NOT EXISTS public.flat (
     id SERIAL,
-    owner_id INTEGER,
+    owner_id BIGINT,
     price INTEGER,
     rooms INTEGER,
     square REAL,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS public.flat_photo (
 -- create table public.neighborhood
 CREATE TABLE IF NOT EXISTS public.neighborhood (
     id SERIAL,
-    tenant_id INTEGER,
+    tenant_id BIGINT,
     neighbors INTEGER,
     price INTEGER,
     place TEXT,
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS public.neighborhood (
 -- create table public.goods
 CREATE TABLE IF NOT EXISTS public.goods (
     id SERIAL,
-    owner_id INTEGER,
+    owner_id BIGINT,
     name VARCHAR(50),
     price INTEGER,
     condition CHAR,
@@ -73,21 +73,21 @@ CREATE TABLE IF NOT EXISTS public.goods (
 
 -- create table public.subscription_landlord
 CREATE TABLE IF NOT EXISTS public.subscription_landlord (
-    tenant_id INTEGER,
-    landlord_id INTEGER
+    tenant_id BIGINT,
+    landlord_id BIGINT
 );
 
 
 -- create table public.likes_flats
 CREATE TABLE IF NOT EXISTS public.likes_flat (
-    tenant_id INTEGER,
+    tenant_id BIGINT,
     flat_id INTEGER
 );
 
 
 -- create table public.subscription_flat
 CREATE TABLE IF NOT EXISTS public.subscription_flat (
-    tenant_id INTEGER,
+    tenant_id BIGINT,
     min_price INTEGER,
     max_price INTEGER,
     min_rooms INTEGER,
@@ -99,6 +99,6 @@ CREATE TABLE IF NOT EXISTS public.subscription_flat (
 
 -- create table public.subscription_metro
     CREATE TABLE IF NOT EXISTS public.subscription_metro (
-    tenant_id INTEGER,
+    tenant_id BIGINT,
     metro VARCHAR(30)
 );

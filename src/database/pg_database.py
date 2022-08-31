@@ -6,7 +6,7 @@ from src.database.database import BaseDatabase
 
 
 class PgDatabase(BaseDatabase):
-    def __init__(self, db_params: dict[str, str], init_files: bool = True):
+    def __init__(self, db_params: dict[str, str], init_files: bool = False):
         self.__connection, self.__cursor = None, None
         self.connect_db(db_params)
         if init_files:

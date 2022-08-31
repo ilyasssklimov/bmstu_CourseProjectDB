@@ -41,7 +41,7 @@ GRANT SELECT ON public.goods TO guest;
 SELECT public.delete_role('tenant');
 SELECT public.create_role('tenant','CREATE ROLE tenant LOGIN PASSWORD ''tenant'';');
 GRANT SELECT ON public.tenant TO tenant;
-GRANT SELECT, UPDATE ON public.landlord TO tenant;
+GRANT SELECT, INSERT, UPDATE ON public.landlord TO tenant;
 GRANT SELECT ON public.flat TO tenant;
 GRANT SELECT ON public.flat_photo TO tenant;
 GRANT INSERT, SELECT, DELETE ON public.subscription_landlord TO tenant;
@@ -56,7 +56,7 @@ GRANT USAGE, SELECT ON SEQUENCE goods_id_seq TO tenant;
 -- create landlord role
 SELECT public.delete_role('landlord');
 SELECT public.create_role('landlord','CREATE ROLE landlord LOGIN PASSWORD ''landlord'';');
-GRANT SELECT ON public.tenant TO landlord;
+GRANT SELECT, INSERT ON public.tenant TO landlord;
 GRANT SELECT ON public.landlord TO landlord;
 GRANT INSERT, SELECT ON public.flat TO landlord;
 GRANT USAGE, SELECT ON SEQUENCE flat_id_seq TO landlord;

@@ -10,12 +10,11 @@ from src.database.pg_database import PgDatabase
 
 
 def main():
+    database = PgDatabase(DB_DEFAULT_PARAMS, init_files=True)
+    database.disconnect_db()
+
     init_logger(TargetType.BOT)
     SayNoToHostelBot.init_img_directory()
-
-    database = PgDatabase(DB_DEFAULT_PARAMS)
-    SayNoToHostelBot.init_db(database)
-    SayNoToHostelBot.set_role(RolesDB.GUEST)
 
     executor.start_polling(SayNoToHostelBot.dispatcher, skip_updates=True)
     SayNoToHostelBot.close_db()

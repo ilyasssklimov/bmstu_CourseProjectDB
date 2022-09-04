@@ -54,10 +54,6 @@ class TenantController(GuestController):
         result = self._tenant_repo.unsubscribe_flat(tenant_id)
         return result
 
-    def get_subscribed_flat_tenants(self, price: int, rooms: int, square: float, metro: str) -> list[Tenant]:
-        tenants = self._tenant_repo.get_subscribed_flat_tenants(price, rooms, square, metro)
-        return tenants
-
     def add_neighborhood(self, neighborhood: Neighborhood) -> Neighborhood:
         new_neighborhood = self._neighborhood_repo.add_neighborhood(neighborhood)
         return new_neighborhood

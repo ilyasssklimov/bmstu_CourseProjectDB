@@ -3,7 +3,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 import logging
 import os
-from typing import Type
+from typing import Type, Callable
 import src.bot.config as cfg
 from src.bot.config import API_TOKEN, IMG_PATH, EntityType as EType
 from src.bot.message import MESSAGE_START, MESSAGE_HELP
@@ -41,8 +41,10 @@ class SayNoToHostelBot:
     @classmethod
     def init_db(cls, database: BaseDatabase, user_id: int):
         assert issubclass(type(database), BaseDatabase)
-        if user_id not in cls.database:
+        new_db = user_id not in cls.database
+        if new_db:
             cls.database[user_id] = database
+        return new_db
 
     @classmethod
     def set_role(cls, role: RolesDB, user_id: int):
@@ -55,6 +57,19 @@ class SayNoToHostelBot:
             cls.controller[user_id] = cls.controllers_dict[role](cls.database[user_id])
         else:
             raise ValueError(f'There is no such role \'{role}\'')
+
+    @staticmethod
+    def init_user_db(handler: Callable):
+        async def wrapper(message: types.Message):
+            user_id = message.from_user.id
+            database = PgDatabase(DB_DEFAULT_PARAMS)
+            if SayNoToHostelBot.init_db(database, user_id):
+                SayNoToHostelBot.set_role(RolesDB.GUEST, user_id)
+            else:
+                database.disconnect_db()
+            await handler(message)
+
+        return wrapper
 
     @classmethod
     def check_tenant(cls, user_id: int):
@@ -82,16 +97,14 @@ class SayNoToHostelBot:
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='start')
+@SayNoToHostelBot.init_user_db
 async def send_welcome(message: types.Message):
-    user_id = message.from_user.id
-    database = PgDatabase(DB_DEFAULT_PARAMS)
-    SayNoToHostelBot.init_db(database, user_id)
-    SayNoToHostelBot.set_role(RolesDB.GUEST, user_id)
     logging.info('Starting bot')
-    await SayNoToHostelBot.bot.send_message(user_id, MESSAGE_START)
+    await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_START)
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands='help')
+@SayNoToHostelBot.init_user_db
 async def send_help(message: types.Message):
     await SayNoToHostelBot.bot.send_message(message.from_user.id, MESSAGE_HELP)
 
@@ -132,6 +145,7 @@ async def register_form(user_id: int, user_type: EType, state: FSMContext = None
 
 
 @SayNoToHostelBot.dispatcher.message_handler(commands=['register_tenant', 'register_landlord'])
+@SayNoToHostelBot.init_user_db
 async def send_register(message: types.Message):
     user_id = message.from_user.id
     if message.text.endswith('tenant'):
@@ -460,7 +474,7 @@ async def add_flat_filter(callback_query: types.CallbackQuery, state: FSMContext
                 metro = data['metro'] if 'metro' in data else []
 
                 user_id = callback_query.from_user.id
-                SayNoToHostelBot.controller[user_id].unsubscribe_flat(user_id)
+                # SayNoToHostelBot.controller[user_id].unsubscribe_flat(user_id)
                 if SayNoToHostelBot.controller[user_id].subscribe_flat(user_id, price, rooms, square, metro):
                     await SayNoToHostelBot.bot.send_message(user_id,
                                                             'Вы успешно подписались на квартиры с данными параметрами')
@@ -726,6 +740,7 @@ async def add_flat(callback_query: types.CallbackQuery, state: FSMContext):
                         await state.finish()
                         await SayNoToHostelBot.bot.send_message(callback_query.from_user.id,
                                                                 'Квартира успешно добавлена')
+                        await SayNoToHostelBot.bot.send_message(callback_query.from_user.id, MESSAGE_HELP)
 
                         tenants = SayNoToHostelBot.controller[owner_id].get_tenants_subscription(owner_id)
                         tenants += SayNoToHostelBot.controller[owner_id].get_subscribed_flat_tenants(

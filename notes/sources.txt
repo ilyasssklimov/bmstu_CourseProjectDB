@@ -2,3 +2,10 @@
 2) https://semnasem.org/articles/2021/09/08/nehvatka-mest-v-studencheskih-obshezhitiyah
 3) http://www.mediagnosis.ru/Autorun/Page6/10_3_.htm
 4) https://studfile.net/preview/5407090/page:4/
+5) https://www.parsec.ru/articles/obzor-sistem-upravleniya-bazami-dannykh-subd-dlya-sistem-kontrolya-i-upravleniya-dostupom-skud/#:~:text=Система управления базами данных (СУБД,созданием и использованием баз данных.
+6) https://web-creator.ru/articles/mysql
+7) https://depix.ru/articles/sistema_upravleniya_bazami_dannyh_mysql
+8) https://web-creator.ru/articles/postgresql
+9) https://oracle-patches.com/oracle/prof/субд-oracle-обзор-характеристик-и-возможностей-базы-данных
+10) https://www.postgresql.org/docs/9.6/plpgsql.html
+11) https://www.python.org/doc/

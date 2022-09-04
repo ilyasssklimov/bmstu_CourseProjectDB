@@ -474,7 +474,6 @@ async def add_flat_filter(callback_query: types.CallbackQuery, state: FSMContext
                 metro = data['metro'] if 'metro' in data else []
 
                 user_id = callback_query.from_user.id
-                # SayNoToHostelBot.controller[user_id].unsubscribe_flat(user_id)
                 if SayNoToHostelBot.controller[user_id].subscribe_flat(user_id, price, rooms, square, metro):
                     await SayNoToHostelBot.bot.send_message(user_id,
                                                             'Вы успешно подписались на квартиры с данными параметрами')

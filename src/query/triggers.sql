@@ -5,7 +5,7 @@ $$
 BEGIN
     DELETE FROM public.flat WHERE owner_id = old.id;
     DELETE FROM public.subscription_landlord WHERE landlord_id = old.id;
-    return old;
+    RETURN old;
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -25,7 +25,7 @@ $$
 BEGIN
     DELETE FROM public.flat_photo WHERE flat_id = old.id;
     DELETE FROM public.likes_flat WHERE flat_id = old.id;
-    return old;
+    RETURN old;
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -48,7 +48,7 @@ BEGIN
     DELETE FROM public.subscription_landlord WHERE tenant_id = old.id;
     DELETE FROM public.likes_flat WHERE tenant_id = old.id;
     DELETE FROM public.subscription_flat WHERE tenant_id = old.id;
-    return old;
+    RETURN old;
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -67,7 +67,7 @@ RETURNS TRIGGER AS
 $$
 BEGIN
     DELETE FROM public.subscription_metro WHERE tenant_id = old.tenant_id;
-    return old;
+    RETURN old;
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -86,7 +86,7 @@ RETURNS TRIGGER AS
 $$
 BEGIN
     DELETE FROM public.subscription_flat WHERE tenant_id = new.tenant_id;
-    return new;
+    RETURN new;
 END;
 $$
 LANGUAGE 'plpgsql';

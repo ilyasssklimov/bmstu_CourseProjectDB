@@ -9,3 +9,6 @@
 9) https://oracle-patches.com/oracle/prof/субд-oracle-обзор-характеристик-и-возможностей-базы-данных
 10) https://www.postgresql.org/docs/9.6/plpgsql.html
 11) https://www.python.org/doc/
+12) https://docs.aiogram.dev/en/latest/
+13) https://doc.qt.io/qtforpython/
+14) https://doc.qt.io/qt-5/qtdesigner-manual.html

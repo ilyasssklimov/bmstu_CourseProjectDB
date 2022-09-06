@@ -12,3 +12,4 @@
 12) https://docs.aiogram.dev/en/latest/
 13) https://doc.qt.io/qtforpython/
 14) https://doc.qt.io/qt-5/qtdesigner-manual.html
+15) https://postgrespro.ru/docs/postgresql/9.6/indexes

@@ -8,21 +8,23 @@ from src.database.pg_database import PgDatabase
 
 
 def main():
-    database = PgDatabase(DB_DEFAULT_PARAMS)
-    analyzer = AnalyzeQuery(database)
     user_id = 5469717692
-
     table = PrettyTable()
     table.field_names = ['Таблица', 'Время без индекса', 'Время с индексом']
+
+    database = PgDatabase(DB_DEFAULT_PARAMS)
+    analyzer = AnalyzeQuery(database)
+
     without_index = [
         analyzer.analyze_query('flat', 'owner_id', user_id),
         analyzer.analyze_query('neighborhood', 'tenant_id', user_id),
         analyzer.analyze_query('goods', 'owner_id', user_id)
     ]
+
     with_index = [
-        analyzer.analyze_query_index('flat', 'owner_id', user_id),
-        analyzer.analyze_query_index('neighborhood', 'tenant_id', user_id),
-        analyzer.analyze_query_index('goods', 'owner_id', user_id)
+        analyzer.analyze_query('flat', 'owner_id', user_id, index=True),
+        analyzer.analyze_query('neighborhood', 'tenant_id', user_id, index=True),
+        analyzer.analyze_query('goods', 'owner_id', user_id, index=True)
     ]
 
     table.add_row(['Квартиры', without_index[0], with_index[0]])

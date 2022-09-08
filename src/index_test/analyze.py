@@ -19,7 +19,7 @@ class AnalyzeQuery:
 
     def __get_time(self, table: str, field: str, owner_id: int) -> float:
         query = f'''EXPLAIN ANALYZE SELECT * FROM public.{table} where {field} = {owner_id}'''
-        return float(self.__db.select(query)[3][0].split()[-2])
+        return float(self.__db.select(query)[-1][0].split()[-2])
 
     def __loop_count(self, table: str, field: str, owner_id: int) -> float:
         result = 0.0
@@ -28,13 +28,10 @@ class AnalyzeQuery:
         result /= REPEAT_TIMES
         return result
 
-    def analyze_query(self, table: str, field: str, owner_id: int) -> float:
+    def analyze_query(self, table: str, field: str, owner_id: int, index: bool = False) -> float:
         self.drop_index(f'{table}_index')
-        without_index = self.__loop_count(table, field, owner_id)
-        return round(without_index, 6)
+        if index:
+            self.create_index(f'{table}_index', f'public.{table}', field)
 
-    def analyze_query_index(self, table: str, field: str, owner_id: int) -> float:
-        self.create_index(f'{table}_index', f'public.{table}', field)
-        with_index = self.__loop_count(table, field, owner_id)
-
-        return round(with_index, 6)
+        result = self.__loop_count(table, field, owner_id)
+        return round(result, 6)

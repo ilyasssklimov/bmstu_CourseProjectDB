@@ -373,12 +373,16 @@ async def show_flat(user_id: int, flat: Flat, photos: list[str], paginate: bool 
             media.attach_photo(types.InputFile(photo))
         flat_messages += await SayNoToHostelBot.bot.send_media_group(user_id, media=media)
 
-    owner = SayNoToHostelBot.controller[user_id].get_landlord(flat.owner_id)
-    username = owner.username
-    info = f'Владелец: {owner.full_name}'
-    if username != 'None':
-        info += f' (@{username})'
-    info += (f'\nТелефон: {owner.phone}\nЦена: {flat.price} ₽\nКомнаты: {flat.rooms}\nПлощадь: {flat.square} м²\n'
+    if flat.owner_id and (owner := SayNoToHostelBot.controller[user_id].get_landlord(flat.owner_id)):
+        username = owner.username
+        info = f'Владелец: {owner.full_name}'
+        if username != 'None':
+            info += f' (@{username})'
+        info += f'\nТелефон: {owner.phone}'
+    else:
+        info = f'Владелец удалил свой аккаунт'
+
+    info += (f'\nЦена: {flat.price} ₽\nКомнаты: {flat.rooms}\nПлощадь: {flat.square} м²\n'
              f'Адрес: {flat.address}\nБлижайшее метро: {flat.metro}\nЭтаж: {flat.floor}/{flat.max_floor}')
 
     if photos[-1:]:
@@ -1091,11 +1095,14 @@ async def input_preferences(message: types.Message, state: FSMContext):
 # ==============================================
 
 async def show_neighborhood(user_id: int, neighborhood: Neighborhood, paginate: bool = True) -> types.Message:
-    tenant = SayNoToHostelBot.controller[user_id].get_tenant(neighborhood.tenant_id)
-    username = tenant.username
-    info = f'Арендатор: {tenant.full_name}'
-    if username != 'None':
-        info += f' (@{username})'
+    if neighborhood.tenant_id and (tenant := SayNoToHostelBot.controller[user_id].get_tenant(neighborhood.tenant_id)):
+        username = tenant.username
+        info = f'Арендатор: {tenant.full_name}'
+        if username != 'None':
+            info += f' (@{username})'
+    else:
+        info = 'Арендатор удалил свой аккаунт'
+
     info += (f'\nКоличество соседей: {neighborhood.neighbors}\nЖелаемая цена: {neighborhood.price} ₽\n'
              f'Местоположение: {neighborhood.place}\nЖелаемый пол: {neighborhood.sex}\n'
              f'Личные предпочтения: {neighborhood.preferences}')
@@ -1391,11 +1398,14 @@ async def input_bargain(callback_query: types.CallbackQuery, state: FSMContext):
 # ==============================================
 
 async def show_goods_one(user_id: int, goods: Goods, paginate: bool = True) -> types.Message:
-    owner = SayNoToHostelBot.controller[user_id].get_tenant(goods.owner_id)
-    username = owner.username
-    info = f'Владелец: {owner.full_name}'
-    if username != 'None':
-        info += f' (@{username})'
+    if goods.owner_id and (owner := SayNoToHostelBot.controller[user_id].get_tenant(goods.owner_id)):
+        username = owner.username
+        info = f'Владелец: {owner.full_name}'
+        if username != 'None':
+            info += f' (@{username})'
+    else:
+        info = 'Владелец товара удалил свой аккаунт'
+
     info += (f'\nНазвание: {goods.name}\nЦена: {goods.price} ₽\n'
              f'Состояние: {cfg.GOODS_CONDITIONS[goods.condition]}\n'
              f'Возможен ли торг: {cfg.GOODS_BARGAIN[goods.bargain]}\n')

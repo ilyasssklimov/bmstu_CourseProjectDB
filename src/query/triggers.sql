@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION public.delete_landlord_dependencies ()
 RETURNS TRIGGER AS
 $$
 BEGIN
-    DELETE FROM public.flat WHERE owner_id = old.id;
+    UPDATE public.flat SET owner_id = NULL WHERE owner_id = old.id;
     DELETE FROM public.subscription_landlord WHERE landlord_id = old.id;
     RETURN old;
 END;
@@ -43,8 +43,8 @@ CREATE OR REPLACE FUNCTION public.delete_tenant_dependencies ()
 RETURNS TRIGGER AS
 $$
 BEGIN
-    DELETE FROM public.neighborhood WHERE tenant_id = old.id;
-    DELETE FROM public.goods WHERE owner_id = old.id;
+    UPDATE public.neighborhood SET tenant_id = NULL WHERE tenant_id = old.id;
+    UPDATE public.goods SET owner_id = NULL WHERE owner_id = old.id;
     DELETE FROM public.subscription_landlord WHERE tenant_id = old.id;
     DELETE FROM public.likes_flat WHERE tenant_id = old.id;
     DELETE FROM public.subscription_flat WHERE tenant_id = old.id;

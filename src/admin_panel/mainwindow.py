@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QTableWidgetItem, QAbstractItemView, QMessageBox
 from src.admin_panel.design import Ui_MainWindow
 from src.bot.config import EntityType as EType
 from src.controller.admin import AdminController
+from src.database.config import RolesDB
 from src.database.database import BaseDatabase
 from src.generate_data.config import MOSCOW_FLATS_URL
 from src.generate_data.data import DataGenerator
@@ -24,6 +25,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.upd_data: list[Tenant | Landlord | Flat | Neighborhood | Goods] = []
 
         self.__db = database
+        self.__db.set_role(RolesDB.ADMIN)
         self.controller: AdminController = AdminController(self.__db)
         self.gen_data: DataGenerator = DataGenerator(self.__db)
 
@@ -286,14 +288,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         def adjust_flat(adjusted_flat: Flat) -> bool:
             try:
                 adjusted_flat.set_id(int(adjusted_flat.id))
-                adjusted_flat.set_owner_id(int(adjusted_flat.owner_id))
+                if adjusted_flat.owner_id.lower() != 'none':
+                    adjusted_flat.set_owner_id(int(adjusted_flat.owner_id))
+                else:
+                    adjusted_flat.set_owner_id(None)
                 adjusted_flat.set_price(int(adjusted_flat.price))
                 adjusted_flat.set_rooms(int(adjusted_flat.rooms))
                 adjusted_flat.set_square(float(adjusted_flat.square))
                 adjusted_flat.set_floor(int(adjusted_flat.floor))
                 adjusted_flat.set_max_floor(int(adjusted_flat.max_floor))
 
-                if not self.controller.check_landlord(adjusted_flat.owner_id):
+                if adjusted_flat.owner_id and not self.controller.check_landlord(adjusted_flat.owner_id):
                     raise IndexError
                 assert adjusted_flat.price > 0 and adjusted_flat.rooms > 0 and adjusted_flat.square > 0
 
@@ -347,12 +352,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         def adjust_neighborhood(adjusted_neighborhood: Neighborhood) -> bool:
             try:
                 adjusted_neighborhood.set_id(int(adjusted_neighborhood.id))
-                adjusted_neighborhood.set_tenant_id(int(adjusted_neighborhood.tenant_id))
+                if adjusted_neighborhood.tenant_id.lower() != 'none':
+                    adjusted_neighborhood.set_tenant_id(int(adjusted_neighborhood.tenant_id))
+                else:
+                    adjusted_neighborhood.set_tenant_id(None)
                 adjusted_neighborhood.set_neighbors(int(adjusted_neighborhood.neighbors))
                 adjusted_neighborhood.set_price(int(adjusted_neighborhood.price))
 
-                if not self.controller.check_tenant(adjusted_neighborhood.tenant_id):
+                if (adjusted_neighborhood.tenant_id and
+                        not self.controller.check_tenant(adjusted_neighborhood.tenant_id)):
                     raise IndexError
+
                 assert adjusted_neighborhood.neighbors > 0 and adjusted_neighborhood.price > 0
                 assert adjusted_neighborhood.sex in ('M', 'F', 'N')
 
@@ -403,7 +413,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         def adjust_goods(adjusted_goods: Goods) -> bool:
             try:
                 adjusted_goods.set_id(int(adjusted_goods.id))
-                adjusted_goods.set_owner_id(int(adjusted_goods.owner_id))
+                if adjusted_goods.owner_id.lower() != 'none':
+                    adjusted_goods.set_owner_id(int(adjusted_goods.owner_id))
+                else:
+                    adjusted_goods.set_owner_id(None)
                 adjusted_goods.set_price(int(adjusted_goods.price))
 
                 assert adjusted_goods.bargain.lower() in ('true', 'false', 'null', 'none')
@@ -412,7 +425,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 assert adjusted_goods.condition in ('E', 'G', 'S', 'U', 'T')
                 assert adjusted_goods.price > 0
-                if not self.controller.check_tenant(adjusted_goods.owner_id):
+                if adjusted_goods.owner_id and not self.controller.check_tenant(adjusted_goods.owner_id):
                     raise IndexError
 
             except ValueError:

@@ -3,9 +3,9 @@ CREATE OR REPLACE FUNCTION public.delete_landlord_dependencies ()
 RETURNS TRIGGER AS
 $$
 BEGIN
-    DELETE FROM public.flat WHERE owner_id = old.id;
+    UPDATE public.flat SET owner_id = NULL WHERE owner_id = old.id;
     DELETE FROM public.subscription_landlord WHERE landlord_id = old.id;
-    return old;
+    RETURN old;
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -25,7 +25,7 @@ $$
 BEGIN
     DELETE FROM public.flat_photo WHERE flat_id = old.id;
     DELETE FROM public.likes_flat WHERE flat_id = old.id;
-    return old;
+    RETURN old;
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -43,12 +43,12 @@ CREATE OR REPLACE FUNCTION public.delete_tenant_dependencies ()
 RETURNS TRIGGER AS
 $$
 BEGIN
-    DELETE FROM public.neighborhood WHERE tenant_id = old.id;
-    DELETE FROM public.goods WHERE owner_id = old.id;
+    UPDATE public.neighborhood SET tenant_id = NULL WHERE tenant_id = old.id;
+    UPDATE public.goods SET owner_id = NULL WHERE owner_id = old.id;
     DELETE FROM public.subscription_landlord WHERE tenant_id = old.id;
     DELETE FROM public.likes_flat WHERE tenant_id = old.id;
     DELETE FROM public.subscription_flat WHERE tenant_id = old.id;
-    return old;
+    RETURN old;
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -67,7 +67,7 @@ RETURNS TRIGGER AS
 $$
 BEGIN
     DELETE FROM public.subscription_metro WHERE tenant_id = old.tenant_id;
-    return old;
+    RETURN old;
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -78,3 +78,22 @@ CREATE TRIGGER delete_subscription_flat
 BEFORE DELETE on public.subscription_flat
 FOR EACH ROW
 EXECUTE PROCEDURE public.delete_subscription_metro();
+
+
+-- trigger to delete subscription_flat before inserting subscription_flat
+CREATE OR REPLACE FUNCTION public.delete_flat_subscription ()
+RETURNS TRIGGER AS
+$$
+BEGIN
+    DELETE FROM public.subscription_flat WHERE tenant_id = new.tenant_id;
+    RETURN new;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+DROP TRIGGER IF EXISTS insert_subscription_flat on public.subscription_flat;
+
+CREATE TRIGGER insert_subscription_flat
+BEFORE INSERT on public.subscription_flat
+FOR EACH ROW
+EXECUTE PROCEDURE public.delete_flat_subscription();

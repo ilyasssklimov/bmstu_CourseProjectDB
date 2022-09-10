@@ -108,12 +108,6 @@ SELECT public.create_constraint (
     'ALTER TABLE public.flat ADD CONSTRAINT flat_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.landlord (id);'
 );
 
-SELECT public.create_constraint (
-    'flat',
-    'flat_owner_id_check',
-    'ALTER TABLE public.flat ADD CONSTRAINT flat_owner_id_check CHECK (owner_id IS NOT NULL);'
-);
-
 SELECT public.create_constraint(
     'flat',
     'flat_price_check',
@@ -184,12 +178,6 @@ SELECT public.create_constraint (
     'ALTER TABLE public.neighborhood ADD CONSTRAINT neighborhood_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenant (id);'
 );
 
-SELECT public.create_constraint (
-    'neighborhood',
-    'neighborhood_tenant_id_check',
-    'ALTER TABLE public.neighborhood ADD CONSTRAINT neighborhood_tenant_id_check CHECK (tenant_id IS NOT NULL);'
-);
-
 SELECT public.create_constraint(
     'neighborhood',
     'neighborhood_neighbors_check',
@@ -222,11 +210,6 @@ SELECT public.create_constraint (
     'ALTER TABLE public.goods ADD CONSTRAINT goods_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.tenant (id);'
 );
 
-SELECT public.create_constraint (
-    'goods',
-    'goods_owner_id_check',
-    'ALTER TABLE public.goods ADD CONSTRAINT goods_owner_id_check CHECK (owner_id IS NOT NULL);'
-);
 SELECT public.create_constraint(
     'goods',
     'goods_name_check',

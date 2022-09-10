@@ -6,10 +6,11 @@ from src.database.database import BaseDatabase
 
 
 class PgDatabase(BaseDatabase):
-    def __init__(self, db_params: dict[str, str]):
+    def __init__(self, db_params: dict[str, str], init_files: bool = False):
         self.__connection, self.__cursor = None, None
         self.connect_db(db_params)
-        self.execute_init_files()
+        if init_files:
+            self.execute_init_files()
 
     def execute_init_files(self):
         self.execute_file(DB_TABLES_FILE)

@@ -11,10 +11,7 @@
 
 ## Функциональные требования
 
-![use_case](./doc/diagram/inc/use_case_tenant.jpg)
-![use_case](./doc/diagram/inc/use_case_landlord.jpg)
-![use_case](./doc/diagram/inc/use_case_guest.jpg)
-![use_case](./doc/diagram/inc/use_case_admin.jpg)
+![use_case](./doc/diagram/inc/use_case_merged.jpg)
 
 |                      Функционал                      |Готовность|
 |:----------------------------------------------------:|:--------:|

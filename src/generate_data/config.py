@@ -3,6 +3,7 @@ MOSCOW_FLATS_URL = 'https://www.domofond.ru/arenda-kvartiry-moskva-c3584'
 
 ERROR_504 = '504 Gateway Time-out'
 
+DRIVER_PATH = r'D:\chromedriver.exe'
 
 USER_ID_RANGE = (100000000, 1000000000)
 USER_AGE_RANGE = (14, 100)

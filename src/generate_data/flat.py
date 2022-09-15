@@ -8,7 +8,7 @@ from selenium.webdriver import DesiredCapabilities
 from urllib.request import urlretrieve
 from src.bot.config import IMG_PATH
 from src.database.database import BaseDatabase
-from src.generate_data.config import ERROR_504
+from src.generate_data.config import ERROR_504, DRIVER_PATH
 from src.model.flat import Flat
 from src.repository.flat import FlatRepository
 from src.repository.landlord import LandlordRepository
@@ -18,7 +18,7 @@ class ParserFlats:
     def __init__(self, db: BaseDatabase):
         self.__landlord_repo = LandlordRepository(db)
         self.__flat_repo = FlatRepository(db)
-        self.__driver = webdriver.Chrome(desired_capabilities=DesiredCapabilities().CHROME)
+        self.__driver = webdriver.Chrome(executable_path=DRIVER_PATH, desired_capabilities=DesiredCapabilities().CHROME)
         self.__driver.implicitly_wait(10)
         self.__owner_ids = [landlord.id for landlord in self.__landlord_repo.get_landlords()]
 
